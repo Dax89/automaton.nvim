@@ -10,6 +10,12 @@ local Automaton = {
     config = nil,
 }
 
+function Automaton.check_save()
+    if Automaton.config.saveall then
+        vim.api.nvim_command("silent! :wall")
+    end
+end
+
 function Automaton.get_templates()
     local templates, Scan = { }, require("plenary.scandir")
 
@@ -271,32 +277,56 @@ function Automaton.setup(config)
 
     vim.api.nvim_create_user_command("AutomatonLaunch", function()
         local ws = Automaton.get_current_workspace()
-        if ws then ws:show_launch(false) end
+
+        if ws then
+            Automaton.check_save()
+            ws:show_launch(false)
+        end
     end, { })
 
     vim.api.nvim_create_user_command("AutomatonDebug", function()
         local ws = Automaton.get_current_workspace()
-        if ws then ws:show_launch(true) end
+
+        if ws then
+            Automaton.check_save()
+            ws:show_launch(true)
+        end
     end, { })
 
     vim.api.nvim_create_user_command("AutomatonTasks", function()
         local ws = Automaton.get_current_workspace()
-        if ws then ws:show_tasks() end
+
+        if ws then
+            Automaton.check_save()
+            ws:show_tasks()
+        end
     end, { })
 
     vim.api.nvim_create_user_command("AutomatonLaunchDefault", function()
         local ws = Automaton.get_current_workspace()
-        if ws then ws:launch_default(false) end
+
+        if ws then
+            Automaton.check_save()
+            ws:launch_default(false)
+        end
     end, { })
 
     vim.api.nvim_create_user_command("AutomatonDebugDefault", function()
         local ws = Automaton.get_current_workspace()
-        if ws then ws:launch_default(true) end
+
+        if ws then
+            Automaton.check_save()
+            ws:launch_default(true)
+        end
     end, { })
 
     vim.api.nvim_create_user_command("AutomatonTasksDefault", function()
         local ws = Automaton.get_current_workspace()
-        if ws then ws:tasks_default() end
+
+        if ws then
+            Automaton.check_save()
+            ws:tasks_default()
+        end
     end, { })
 end
 

@@ -1,5 +1,6 @@
 return {
     debug = false,
+    saveall = true,
 
     events = {
         workspacechanged = nil,
