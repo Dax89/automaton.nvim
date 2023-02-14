@@ -3,13 +3,13 @@
 
     "tasks": [
         {
-            "name": "CMake - Configure Debug",
+            "name": "Configure Debug",
             "type": "shell",
             "command": "cmake -B ${ws:buildDebug} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug",
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "CMake - Build Debug",
+            "name": "Build Debug",
             "type": "shell",
             "command": "cmake --build . --config Debug -j8",
             "cwd": "${ws:buildDebug}",
