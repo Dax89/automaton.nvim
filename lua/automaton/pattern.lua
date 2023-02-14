@@ -38,8 +38,8 @@ function Pattern.resolve(line, e)
 
         if not vim.tbl_isempty(r) then
             local qf = Pattern.to_qflist(p, r)
+
             if qf then
-                vim.pretty_print(qf)
                 return qf
             end
         end
