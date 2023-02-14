@@ -24,7 +24,7 @@ local function show_entries(entries, cb)
                 }
 
                 if e.default == true then
-                    r.display = r.display .. " (DEFAULT)"
+                    r.display = r.display .. " [DEFAULT]"
                 end
 
                 return r
