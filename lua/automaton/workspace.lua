@@ -17,11 +17,17 @@ local function show_entries(entries, cb)
         finder = Finders.new_table({
             results = entries,
             entry_maker = function(e)
-                return {
+                local r = {
                     value = e,
                     display = e.name,
                     ordinal = e.name,
                 }
+
+                if e.default == true then
+                    r.display = r.display .. " (DEFAULT)"
+                end
+
+                return r
             end
         }),
 
