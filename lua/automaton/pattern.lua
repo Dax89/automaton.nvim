@@ -1,7 +1,7 @@
 local Pattern = { }
 
 -- https://neovim.io/doc/user/luaref.html#luaref-patterns
--- http://neovim.io/doc/user/builtin.html#setqflist()
+-- https://neovim.io/doc/user/builtin.html#setqflist()
 
 function Pattern.error_to_qflist(err)
     err = err:upper()
@@ -10,7 +10,7 @@ function Pattern.error_to_qflist(err)
         return err[1]
     end
 
-    return "X"
+    return "G" -- General Purpose
 end
 
 function Pattern.to_qflist(p, r)
@@ -38,7 +38,10 @@ function Pattern.resolve(line, e)
 
         if not vim.tbl_isempty(r) then
             local qf = Pattern.to_qflist(p, r)
-            if qf then return qf end
+            if qf then
+                vim.pretty_print(qf)
+                return qf
+            end
         end
     end
 
