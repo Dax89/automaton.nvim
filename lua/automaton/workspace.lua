@@ -62,7 +62,7 @@ return function(config, rootpath)
         local filepath = Path.new(self:ws_root(), config.impl.variablesfile)
 
         if filepath:is_file() then
-            return self:read_resolved(filepath, self:builtin_variables())
+            return self:read_resolved(filepath, self:builtin_variables()) or { }
         end
 
         return { }
@@ -80,43 +80,75 @@ return function(config, rootpath)
         vim.api.nvim_command(":e " .. tostring(Path.new(self:ws_root(), config.impl.variablesfile)))
     end
 
-    function Workspace:launch_default(debug)
-        local wslaunch = self:read_resolved(Path.new(self:ws_root(), config.impl.launchfile))
+    function Workspace:get_default_task()
+        local wstasks = self:read_resolved(Path.new(self:ws_root(), config.impl.tasksfile))
 
-        for _, l in ipairs(wslaunch.configurations or { }) do
-            if l.default == true then
-                Runner.launch(l, debug)
-                return
+        if wstasks then
+            for _, t in ipairs(wstasks.tasks or { }) do
+                if t.default == true then
+                    return t
+                end
             end
         end
 
-        error("Default launch configuration not found")
+        return nil
+    end
+
+    function Workspace:get_default_launch()
+        local wslaunch = self:read_resolved(Path.new(self:ws_root(), config.impl.launchfile))
+
+        if wslaunch then
+            for _, l in ipairs(wslaunch.configurations or { }) do
+                if l.default == true then
+                    return l
+                end
+            end
+        end
+
+        return nil
+    end
+
+    function Workspace:launch_default(debug)
+        local launch = self:get_default_launch()
+
+        if launch then
+            Runner.launch(launch, debug)
+        else
+            error("Default launch configuration not found")
+        end
     end
 
     function Workspace:tasks_default()
-        local wstasks = self:read_resolved(Path.new(self:ws_root(), config.impl.tasksfile))
+        local task = self:get_default_task()
 
-        for _, t in ipairs(wstasks.tasks or { }) do
-            if t.default == true then
-                Runner.run(t)
-                return
-            end
+        if task then
+            Runner.run(task)
+        else
+            error("Default task not found")
         end
-
-        error("Default task not found")
     end
 
     function Workspace:show_launch(debug)
         local wslaunch = self:read_resolved(Path.new(self:ws_root(), config.impl.launchfile))
-        show_entries(wslaunch.configurations or { }, function(e) Runner.launch(e, debug) end)
+
+        if wslaunch then
+            show_entries(wslaunch.configurations or { }, function(e) Runner.launch(e, debug) end)
+        end
     end
 
     function Workspace:show_tasks()
         local wstasks = self:read_resolved(Path.new(self:ws_root(), config.impl.tasksfile))
-        show_entries(wstasks.tasks or { }, function(e) Runner.run(e) end)
+
+        if wstasks then
+            show_entries(wstasks.tasks or { }, function(e) Runner.run(e) end)
+        end
     end
 
     function Workspace:read_resolved(filepath, variables)
+        if not filepath:is_file() then
+            return nil
+        end
+
         local c = Utils.read_file(filepath)
 
         if type(variables) == "table" then

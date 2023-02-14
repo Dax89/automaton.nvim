@@ -8,7 +8,12 @@ local Automaton = {
     storage = Path:new(vim.fn.stdpath("data"), "automaton"),
     workspaces = { },
     config = nil,
+    active = nil,
 }
+
+function Automaton.get_active_workspace()
+    return Automaton.active
+end
 
 function Automaton.check_save()
     if Automaton.config.saveall then
@@ -206,6 +211,7 @@ function Automaton.load_workspace(searchpath, files)
 
         ws:set_active()
         Automaton.update_recents(ws)
+        Automaton.active = ws
 
         if vim.is_callable(Automaton.config.events.workspacechanged) then
             Automaton.config.events.workspacechanged(ws)
