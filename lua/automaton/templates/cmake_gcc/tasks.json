@@ -1,0 +1,34 @@
+{
+    "version": "1.0.0",
+
+    "tasks": [
+        {
+            "name": "CMake - Configure Debug",
+            "type": "shell",
+            "command": "cmake -B ${ws:buildDebug} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "CMake - Build Debug",
+            "type": "shell",
+            "command": "cmake --build . --config Debug -j8",
+            "cwd": "${ws:buildDebug}",
+            "default": true,
+
+            "problems": {
+                "ignoreoutput": false,
+
+                "patterns": [
+                    {
+                        "pattern": "(.+):(%d+):(%d+): (%w+): (.+)",
+                        "filename": 1,
+                        "lnum": 2,
+                        "col": 3,
+                        "type": 4,
+                        "text": 5
+                    }
+                ]
+            }
+        }
+    ]
+}

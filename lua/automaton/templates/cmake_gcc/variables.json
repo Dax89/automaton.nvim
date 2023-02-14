@@ -1,0 +1,4 @@
+{
+    "buildDebug": "${workspaceFolder}/../build_${workspaceName}_Debug",
+    "buildRelease": "${workspaceFolder}/../build_${workspaceName}_Release"
+}
