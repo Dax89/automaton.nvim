@@ -1,3 +1,5 @@
+local Pattern = require("automaton.pattern")
+
 local Runner = { }
 
 function Runner._open_quickfix()
@@ -14,39 +16,45 @@ function Runner._clear_quickfix(title)
     vim.fn.setqflist({ }, " ", {title = title})
 end
 
-function Runner._append_quickfix(lines)
-    if type(lines) == "string" then
-        lines = {lines}
+function Runner._append_quickfix(line)
+    if type(line) == "string" then
+        vim.fn.setqflist({ }, "a", {lines = {line}})
+    elseif type(line) == "table" then
+        vim.fn.setqflist({line}, "a")
+    else
+        return
     end
 
-    vim.fn.setqflist({ }, "a", {lines = lines})
     Runner._scroll_quickfix()
 end
 
-function Runner._show_output(_, data, _)
-    Runner._append_quickfix(vim.tbl_filter(function(x)
-        return #x > 0
-    end, data))
+function Runner._append_output(lines, e)
+    for _, line in ipairs(lines) do
+        if string.len(line) > 0 then
+            local res = Pattern.resolve(line, e)
+
+            if res then
+                Runner._append_quickfix(res)
+            end
+        end
+    end
 end
 
-function Runner._run(cmd, options)
-    options = options or { }
+function Runner._run(cmd, e)
+    e = e or { }
 
     Runner._open_quickfix()
     vim.api.nvim_command("wincmd p") -- Go Back to the previous window
-    Runner._clear_quickfix(options.name or "Output")
+    Runner._clear_quickfix(e.name or "Output")
     Runner._append_quickfix(">>> " .. (type(cmd) == "table" and table.concat(cmd, " ") or cmd))
 
     vim.fn.jobstart(cmd, {
-        cwd = options.cwd,
-        env = options.env,
+        cwd = e.cwd,
+        env = e.env,
 
-        on_stdout = Runner._show_output,
-        on_stderr = Runner._show_output,
-
-        on_exit = function(_, code, _)
-            Runner._append_quickfix(">>> Job terminated with code " .. code)
-        end
+        on_stdout = function(_, lines, _) Runner._append_output(lines, e) end,
+        on_stderr = function(_, lines, _) Runner._append_output(lines, e) end,
+        on_exit = function(_, code, _) Runner._append_quickfix(">>> Job terminated with code " .. code) end
     })
 end
 
