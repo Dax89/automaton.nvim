@@ -44,6 +44,16 @@ function Automaton.load_recents()
     return recents, recentspath
 end
 
+function Automaton.has_open_buffers()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(buf) then
+            return true
+        end
+    end
+
+    return false
+end
+
 function Automaton.get_buffers_for_ws(ws)
     local buffers = { }
 
@@ -193,7 +203,7 @@ function Automaton.load_workspace(searchpath, files)
             Automaton.workspaces[tostring(wspath)] = ws
             ws:set_active()
 
-            if vim.tbl_isempty(files) then
+            if vim.tbl_isempty(files) and not Automaton.has_open_buffers() then
                 vim.api.nvim_command(":enew")
             else -- Reload files for this workspace
                 for _, filepath in ipairs(files) do

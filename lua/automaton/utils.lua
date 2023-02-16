@@ -16,6 +16,33 @@ function Utils.get_filename(p)
     return vim.fn.fnamemodify(tostring(p), ":t")
 end
 
+function Utils.list_reverse(l)
+    vim.validate({
+        l = {1, function() return vim.tbl_islist(l) end}
+    })
+
+    local rev = { }
+
+    for i = #l, 1, -1 do
+        rev[#rev + 1] = l[i]
+    end
+
+    return rev
+end
+
+function Utils.osopen_command()
+    local uname = vim.loop.os_uname().sysname
+    local cmd = nil
+
+    if uname == "Windows" then cmd = "cmd /c start"
+    elseif uname == "Darwin" then cmd = "open"
+    elseif uname == "Linux" then cmd = "xdg-open"
+    else error("Unsupported Platform '" .. uname .. "'")
+    end
+
+    return cmd
+end
+
 function Utils.read_file(filepath)
     local f = require("io").open(tostring(filepath), "r")
 

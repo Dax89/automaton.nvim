@@ -15,7 +15,7 @@ local function show_entries(entries, cb)
         sorter = Config.generic_sorter({ }),
 
         finder = Finders.new_table({
-            results = entries,
+            results = Utils.list_reverse(entries),
             entry_maker = function(e)
                 local r = {
                     value = e,
@@ -161,6 +161,7 @@ return function(config, rootpath)
     function Workspace:builtin_variables()
         return {
             env = vim.env,
+            os_open = Utils.osopen_command(),
             number_of_cores = Utils.get_number_of_cores(),
             user_home = vim.loop.os_homedir(),
             workspace_folder = self.rootpath,
