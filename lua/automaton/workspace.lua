@@ -55,11 +55,11 @@ return function(config, rootpath)
     }
 
     function Workspace:ws_root()
-        return tostring(Path.new(self.rootpath, config.impl.workspace))
+        return tostring(Path:new(self.rootpath, config.impl.workspace))
     end
 
     function Workspace:get_variables()
-        local filepath = Path.new(self:ws_root(), config.impl.variablesfile)
+        local filepath = Path:new(self:ws_root(), config.impl.variablesfile)
 
         if filepath:is_file() then
             return self:read_resolved(filepath, self:builtin_variables()) or { }
@@ -69,19 +69,19 @@ return function(config, rootpath)
     end
 
     function Workspace:open_launch()
-        vim.api.nvim_command(":e " .. tostring(Path.new(self:ws_root(), config.impl.launchfile)))
+        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.launchfile)))
     end
 
     function Workspace:open_tasks()
-        vim.api.nvim_command(":e " .. tostring(Path.new(self:ws_root(), config.impl.tasksfile)))
+        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.tasksfile)))
     end
 
     function Workspace:open_variables()
-        vim.api.nvim_command(":e " .. tostring(Path.new(self:ws_root(), config.impl.variablesfile)))
+        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.variablesfile)))
     end
 
     function Workspace:get_default_task()
-        local wstasks = self:read_resolved(Path.new(self:ws_root(), config.impl.tasksfile))
+        local wstasks = self:read_resolved(Path:new(self:ws_root(), config.impl.tasksfile))
 
         if wstasks then
             for _, t in ipairs(wstasks.tasks or { }) do
@@ -95,7 +95,7 @@ return function(config, rootpath)
     end
 
     function Workspace:get_default_launch()
-        local wslaunch = self:read_resolved(Path.new(self:ws_root(), config.impl.launchfile))
+        local wslaunch = self:read_resolved(Path:new(self:ws_root(), config.impl.launchfile))
 
         if wslaunch then
             for _, l in ipairs(wslaunch.configurations or { }) do
@@ -129,7 +129,7 @@ return function(config, rootpath)
     end
 
     function Workspace:show_launch(debug)
-        local wslaunch = self:read_resolved(Path.new(self:ws_root(), config.impl.launchfile))
+        local wslaunch = self:read_resolved(Path:new(self:ws_root(), config.impl.launchfile))
 
         if wslaunch then
             show_entries(wslaunch.configurations or { }, function(e) Runner.launch(e, debug) end)
@@ -137,7 +137,7 @@ return function(config, rootpath)
     end
 
     function Workspace:show_tasks()
-        local wstasks = self:read_resolved(Path.new(self:ws_root(), config.impl.tasksfile))
+        local wstasks = self:read_resolved(Path:new(self:ws_root(), config.impl.tasksfile))
 
         if wstasks then
             show_entries(wstasks.tasks or { }, function(e) Runner.run(e) end)

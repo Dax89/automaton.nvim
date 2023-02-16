@@ -24,15 +24,15 @@ end
 function Automaton.get_templates()
     local templates, Scan = { }, require("plenary.scandir")
 
-    for _, p in ipairs(Scan.scan_dir(tostring(Path.new(Utils.get_plugin_root(), "templates")), {only_dirs = true, depth = 1})) do
-        templates[Utils.get_filename(p)] = Path.new(p)
+    for _, p in ipairs(Scan.scan_dir(tostring(Path:new(Utils.get_plugin_root(), "templates")), {only_dirs = true, depth = 1})) do
+        templates[Utils.get_filename(p)] = Path:new(p)
     end
 
     return templates
 end
 
 function Automaton.load_recents()
-    local recentspath = Path:new(tostring(Automaton.storage), "recents.json")
+    local recentspath = Path:new(Automaton.storage, "recents.json")
     local recents = { }
 
     if recentspath:is_file() then
@@ -116,50 +116,40 @@ function Automaton.recent_workspaces()
     end)
 end
 
-function Automaton._select_folder(wsname, template)
-    if not wsname or not template then
-        return
-    end
-
-    local Picker = require("automaton.picker")
-
-    Picker.select_folder(function(p)
-        Automaton.init_workspace(Path.new(tostring(p), wsname), template)
-    end)
-end
-
 function Automaton.create_workspace()
     vim.ui.input("Workspace name", function(wsname)
         if wsname and string.len(wsname) then
-            local templates = Automaton.get_templates()
-
-            vim.ui.select(vim.tbl_keys(templates), {
-                prompt = "Select Template"
-            }, function(t)
-                Automaton._select_folder(wsname, t)
+            require("automaton.picker").select_folder(function(p)
+                Automaton.init_workspace(Path:new(p, wsname))
             end)
         end
     end)
 end
 
-function Automaton.init_workspace(filepath, template)
+function Automaton.init_workspace(filepath)
     filepath = vim.F.if_nil(filepath, Path:new(vim.fn.expand("%:p")):parent())
-    template = vim.F.if_nil(template, "base")
 
     local wspath = Path:new(filepath, Automaton.config.impl.workspace)
     assert(not wspath:is_file())
 
     if not wspath:exists() then
         local templates = Automaton.get_templates()
-        wspath:mkdir({parents = true})
 
-        templates[template]:copy({
-            recursive = true,
-            override = true,
-            destination = wspath,
-        })
+        vim.ui.select(vim.tbl_keys(templates), {
+            prompt = "Select Template"
+        }, function(t)
+            if t then
+                wspath:mkdir({parents = true})
 
-        Automaton.load_workspace(wspath:parent())
+                templates[t]:copy({
+                    recursive = true,
+                    override = true,
+                    destination = wspath,
+                })
+
+                Automaton.load_workspace(wspath:parent())
+            end
+        end)
     end
 end
 
@@ -196,20 +186,24 @@ function Automaton.load_workspace(searchpath, files)
 
         if ws then
             Log.debug("Switched active workspace")
+            ws:set_active()
         else
             Log.debug("Workspace found in " .. tostring(wspath))
             ws = Workspace(Automaton.config, wspath)
             Automaton.workspaces[tostring(wspath)] = ws
+            ws:set_active()
 
-            -- Reload files for this workspace
-            for _, filepath in ipairs(files) do
-                if Path.new(filepath):is_file() then
-                    vim.api.nvim_command(":e " .. filepath)
+            if vim.tbl_isempty(files) then
+                vim.api.nvim_command(":enew")
+            else -- Reload files for this workspace
+                for _, filepath in ipairs(files) do
+                    if Path:new(filepath):is_file() then
+                        vim.api.nvim_command(":e " .. filepath)
+                    end
                 end
             end
         end
 
-        ws:set_active()
         Automaton.update_recents(ws)
         Automaton.active = ws
 
@@ -261,10 +255,10 @@ function Automaton.setup(config)
         end
     })
 
-    vim.api.nvim_create_user_command("AutomatonRecentWorkspaces", Automaton.recent_workspaces, { })
-    vim.api.nvim_create_user_command("AutomatonCreateWorkspace", Automaton.create_workspace, { })
-    vim.api.nvim_create_user_command("AutomatonInitWorkspace", Automaton.init_workspace, { })
-    vim.api.nvim_create_user_command("AutomatonLoadWorkspace", Automaton.load_workspace, { })
+    vim.api.nvim_create_user_command("AutomatonRecentWorkspaces", function() Automaton.recent_workspaces() end, { })
+    vim.api.nvim_create_user_command("AutomatonCreateWorkspace", function() Automaton.create_workspace() end, { })
+    vim.api.nvim_create_user_command("AutomatonInitWorkspace", function() Automaton.init_workspace() end, { })
+    vim.api.nvim_create_user_command("AutomatonLoadWorkspace", function() Automaton.load_workspace() end, { })
 
     vim.api.nvim_create_user_command("AutomatonOpenLaunch", function()
         local ws = Automaton.get_current_workspace()
