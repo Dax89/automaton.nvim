@@ -161,10 +161,10 @@ return function(config, rootpath)
     function Workspace:builtin_variables()
         return {
             env = vim.env,
-            numberOfCores = Utils.get_number_of_cores(),
-            userHome = vim.loop.os_homedir(),
-            workspaceFolder = self.rootpath,
-            workspaceName = self:get_name(),
+            number_of_cores = Utils.get_number_of_cores(),
+            user_home = vim.loop.os_homedir(),
+            workspace_folder = self.rootpath,
+            workspace_name = self:get_name(),
             cwd = vim.fn.getcwd(),
         }
     end
