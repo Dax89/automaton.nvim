@@ -30,6 +30,33 @@ function Utils.list_reverse(l)
     return rev
 end
 
+function Utils.cmdline_split(s)
+    local cmd, w = { }, { }
+    local quote, escape = false, false
+
+    for c in s:gmatch(".") do
+        table.insert(w, c)
+
+        if c == '\\' then
+            escape = true
+        elseif c == '"' and not escape then
+            quote = not quote
+        elseif c == ' ' and not quote and not escape then
+            table.remove(w, #w) -- Remove Last ' '
+            table.insert(cmd, table.concat(w))
+            w = { }
+        elseif escape then
+            escape = false
+        end
+    end
+
+    if #w > 0 then -- Check last word
+        table.insert(cmd, table.concat(w))
+    end
+
+    return cmd
+end
+
 function Utils.osopen_command()
     local uname = vim.loop.os_uname().sysname
     local cmd = nil

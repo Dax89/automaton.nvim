@@ -182,7 +182,7 @@ return function(config, rootpath)
         --       then the whole match is used as the key. 
         -- FROM: https://www.ibm.com/docs/en/ias?topic=manipulation-stringgsub-s-pattern-repl-n
         for k, v in pairs(variables) do
-            local p = type(v) == "table" and "%${" .. k .. ":(%w+)}" or "%${" .. k .. "}"
+            local p = type(v) == "table" and "%${" .. k .. ":([_%w]+)}" or "%${" .. k .. "}"
             s = s:gsub(p, v)
         end
 

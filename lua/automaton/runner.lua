@@ -1,4 +1,5 @@
 local Pattern = require("automaton.pattern")
+local Utils = require("automaton.utils")
 
 local Runner = { }
 
@@ -71,7 +72,13 @@ function Runner._run_shell(cmd, options)
 end
 
 function Runner._run_process(cmd, options)
-    local runcmd = {cmd}
+    local runcmd = {}
+
+    if type(cmd) == "string" then
+        runcmd = Utils.cmdline_split(cmd)
+    else
+        runcmd = {cmd}
+    end
 
     if vim.tbl_islist(options.args) then
         vim.list_extend(runcmd, options.args)
