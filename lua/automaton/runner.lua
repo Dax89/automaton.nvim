@@ -44,19 +44,24 @@ end
 function Runner._run(cmd, e)
     e = e or { }
 
-    Runner._open_quickfix()
-    vim.api.nvim_command("wincmd p") -- Go Back to the previous window
-    Runner._clear_quickfix(e.name or "Output")
-    Runner._append_quickfix(">>> " .. (type(cmd) == "table" and table.concat(cmd, " ") or cmd))
-
-    vim.fn.jobstart(cmd, {
+    local options = {
         cwd = e.cwd,
         env = e.env,
+        detach = e.detach,
+    }
 
-        on_stdout = function(_, lines, _) Runner._append_output(lines, e) end,
-        on_stderr = function(_, lines, _) Runner._append_output(lines, e) end,
-        on_exit = function(_, code, _) Runner._append_quickfix(">>> Job terminated with code " .. code) end
-    })
+    if options.detach ~= true then
+        Runner._open_quickfix()
+        vim.api.nvim_command("wincmd p") -- Go Back to the previous window
+        Runner._clear_quickfix(e.name or "Output")
+        Runner._append_quickfix(">>> " .. (type(cmd) == "table" and table.concat(cmd, " ") or cmd))
+
+        options.on_stdout = function(_, lines, _) Runner._append_output(lines, e) end
+        options.on_stderr = function(_, lines, _) Runner._append_output(lines, e) end
+        options.on_exit = function(_, code, _) Runner._append_quickfix(">>> Job terminated with code " .. code) end
+    end
+
+    vim.fn.jobstart(cmd, options)
 end
 
 function Runner._run_shell(cmd, options)
