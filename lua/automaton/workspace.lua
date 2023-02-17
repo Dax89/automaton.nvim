@@ -15,7 +15,7 @@ local function show_entries(entries, cb)
         sorter = Config.generic_sorter({ }),
 
         finder = Finders.new_table({
-            results = Utils.list_reverse(entries),
+            results = entries,
             entry_maker = function(e)
                 local r = {
                     value = e,
