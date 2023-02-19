@@ -1,4 +1,4 @@
 {
-    "build_debug": "${workspace_folder}/../build_${workspace_name}_Debug",
-    "build_release": "${workspace_folder}/../build_${workspace_name}_Release"
+    build_debug: "${workspace_folder}/../build_${workspace_name}_Debug",
+    build_release: "${workspace_folder}/../build_${workspace_name}_Release",
 }
