@@ -1,7 +1,23 @@
 local Utils = { }
 
-function Utils.starts_with(s, start)
-    return s:sub(1, string.len(start)) == start
+function Utils.list_reinsert(t, inv, cmp)
+    assert(vim.tbl_islist(t))
+    if not cmp then cmp = function(a, b) return a == b end end
+
+    local idx = 0
+
+    for i, v in ipairs(t) do
+        if cmp(v, inv) then
+            idx = i
+            break
+        end
+    end
+
+    if idx > 0 then
+        table.remove(t, idx)
+    end
+
+    table.insert(t, 1, inv)
 end
 
 function Utils.split_lines(s)

@@ -69,6 +69,58 @@ return function(config, rootpath)
         return { }
     end
 
+    function Workspace:get_tasks()
+        local wstasks = vim.F.if_nil(self:read_resolved(Path:new(self:ws_root(), config.impl.tasksfile)), { })
+        assert(type(wstasks) == "table")
+        return vim.F.if_nil(wstasks.tasks, { }) or { }
+    end
+
+    function Workspace:get_tasks_by_id(intasks)
+        local tasks, byid = vim.F.if_nil(intasks, self:get_tasks()), {}
+
+        for _, t in ipairs(tasks) do
+            if t.id then
+                if byid[t.id] then
+                    error("Duplicate task id '" .. t.id .. "'")
+                else
+                    byid[t.id] = t
+                end
+            end
+        end
+
+        return byid
+    end
+
+    function Workspace:get_launch()
+        local wslaunch = vim.F.if_nil(self:read_resolved(Path:new(self:ws_root(), config.impl.launchfile)), { })
+        assert(type(wslaunch) == "table")
+        return vim.F.if_nil(wslaunch.configurations, { })
+    end
+
+    function Workspace:get_default_task()
+        local tasks = self:get_tasks()
+
+        for _, t in ipairs(tasks) do
+            if t.default == true then
+                return t
+            end
+        end
+
+        return nil
+    end
+
+    function Workspace:get_default_launch()
+        local configs = self:get_launch()
+
+        for _, l in ipairs(configs) do
+            if l.default == true then
+                return l
+            end
+        end
+
+        return nil
+    end
+
     function Workspace:open_launch()
         vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.launchfile)))
     end
@@ -81,68 +133,78 @@ return function(config, rootpath)
         vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.variablesfile)))
     end
 
-    function Workspace:get_default_task()
-        local wstasks = self:read_resolved(Path:new(self:ws_root(), config.impl.tasksfile))
-
-        if wstasks then
-            for _, t in ipairs(wstasks.tasks or { }) do
-                if t.default == true then
-                    return t
-                end
-            end
-        end
-
-        return nil
-    end
-
-    function Workspace:get_default_launch()
-        local wslaunch = self:read_resolved(Path:new(self:ws_root(), config.impl.launchfile))
-
-        if wslaunch then
-            for _, l in ipairs(wslaunch.configurations or { }) do
-                if l.default == true then
-                    return l
-                end
-            end
-        end
-
-        return nil
-    end
-
     function Workspace:launch_default(debug)
         local launch = self:get_default_launch()
-
-        if launch then
-            Runner.launch(launch, debug)
-        else
-            error("Default launch configuration not found")
+        if launch then self:launch(launch, debug)
+        else vim.notify("Default launch configuration not found")
         end
     end
 
     function Workspace:tasks_default()
         local task = self:get_default_task()
-
-        if task then
-            Runner.run(task)
-        else
-            error("Default task not found")
+        if task then self:run(task)
+        else error("Default task not found")
         end
     end
 
     function Workspace:show_launch(debug)
-        local wslaunch = self:read_resolved(Path:new(self:ws_root(), config.impl.launchfile))
-
-        if wslaunch then
-            show_entries(wslaunch.configurations or { }, function(e) Runner.launch(e, debug) end)
-        end
+        local configs = self:get_launch()
+        show_entries(configs, function(e) self:launch(e, debug) end)
     end
 
     function Workspace:show_tasks()
-        local wstasks = self:read_resolved(Path:new(self:ws_root(), config.impl.tasksfile))
+        local tasks = self:get_tasks()
+        show_entries(tasks, function(e) self:run(e, tasks) end)
+    end
 
-        if wstasks then
-            show_entries(wstasks.tasks or { }, function(e) Runner.run(e) end)
+    function Workspace:get_depends(e, byid, depends)
+        depends = depends or { }
+
+        if vim.tbl_islist(e.depends) then
+            for _, dep in ipairs(e.depends) do
+                if byid[dep] then
+                    Utils.list_reinsert(depends, byid[dep], function(a, b) return a.id == b.id end)
+                    self:get_depends(byid[dep], byid, depends)
+                else
+                    error("Task Id '" .. dep .. "' not found")
+                end
+            end
         end
+
+        return depends
+    end
+
+    function Workspace:run_depends(depends, cb, i)
+        i = i or 1
+
+        if i > #depends then
+            if vim.is_callable(cb) then cb() end
+            return
+        end
+
+        Runner.run(depends[i], function()
+            self:run_depends(depends, cb, i + 1)
+        end)
+    end
+
+    function Workspace:run(e, tasks)
+        Runner.clear_quickfix(e)
+
+        local byid = self:get_tasks_by_id(tasks)
+        local depends = self:get_depends(e, byid)
+        table.insert(depends, e)
+        self:run_depends(depends)
+    end
+
+    function Workspace:launch(e, debug)
+        Runner.clear_quickfix(e)
+
+        local byid = self:get_tasks_by_id()
+        local depends = self:get_depends(e, byid)
+
+        self:run_depends(depends, function()
+            Runner.launch(e, debug)
+        end)
     end
 
     function Workspace:read_resolved(filepath, variables)

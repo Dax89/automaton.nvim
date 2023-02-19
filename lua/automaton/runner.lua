@@ -3,6 +3,10 @@ local Utils = require("automaton.utils")
 
 local Runner = { }
 
+function Runner.clear_quickfix(e)
+    vim.fn.setqflist({ }, " ", {title = vim.F.if_nil(e.name, "Output")})
+end
+
 function Runner._open_quickfix()
     vim.api.nvim_command("copen")
 end
@@ -11,10 +15,6 @@ function Runner._scroll_quickfix()
     if vim.bo.buftype ~= "quickfix" then
         vim.api.nvim_command("cbottom")
     end
-end
-
-function Runner._clear_quickfix(title)
-    vim.fn.setqflist({ }, " ", {title = title})
 end
 
 function Runner._append_quickfix(line)
@@ -41,7 +41,7 @@ function Runner._append_output(lines, e)
     end
 end
 
-function Runner._run(cmd, e)
+function Runner._run(cmd, e, onsuccess)
     e = e or { }
 
     local options = {
@@ -53,18 +53,24 @@ function Runner._run(cmd, e)
     if options.detach ~= true then
         Runner._open_quickfix()
         vim.api.nvim_command("wincmd p") -- Go Back to the previous window
-        Runner._clear_quickfix(e.name or "Output")
         Runner._append_quickfix(">>> " .. (type(cmd) == "table" and table.concat(cmd, " ") or cmd))
 
         options.on_stdout = function(_, lines, _) Runner._append_output(lines, e) end
         options.on_stderr = function(_, lines, _) Runner._append_output(lines, e) end
-        options.on_exit = function(_, code, _) Runner._append_quickfix(">>> Job terminated with code " .. code) end
+
+        options.on_exit = function(_, code, _)
+            Runner._append_quickfix(">>> Job terminated with code " .. code)
+
+            if vim.is_callable(onsuccess) and code == 0 then
+                onsuccess()
+            end
+        end
     end
 
     vim.fn.jobstart(cmd, options)
 end
 
-function Runner._run_shell(cmd, options)
+function Runner._run_shell(cmd, options, onsuccess)
     local runcmd = cmd
 
     if vim.tbl_islist(options.args) then
@@ -73,10 +79,10 @@ function Runner._run_shell(cmd, options)
         end
     end
 
-    Runner._run(runcmd, options)
+    Runner._run(runcmd, options, onsuccess)
 end
 
-function Runner._run_process(cmd, options)
+function Runner._run_process(cmd, options, onsuccess)
     local runcmd = {}
 
     if type(cmd) == "string" then
@@ -89,14 +95,14 @@ function Runner._run_process(cmd, options)
         vim.list_extend(runcmd, options.args)
     end
 
-    Runner._run(runcmd, options)
+    Runner._run(runcmd, options, onsuccess)
 end
 
-function Runner.run(t)
+function Runner.run(t, onsuccess)
     if t.type == "shell" then
-        Runner._run_shell(t.command, t)
+        Runner._run_shell(t.command, t, onsuccess)
     elseif t.type == "process" then
-        Runner._run_process(t.command, t)
+        Runner._run_process(t.command, t, onsuccess)
     else
         error(string.format("Invalid task type: '%s'", t.type))
     end
