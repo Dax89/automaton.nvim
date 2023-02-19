@@ -7,6 +7,7 @@ local ActionState = require("telescope.actions.state")
 local Path = require("plenary.path")
 local Runner = require("automaton.runner")
 local Utils = require("automaton.utils")
+local JSON5 = require("automaton.json5")
 
 -- https://github.com/nvim-telescope/telescope.nvim/blob/master/developers.md
 local function show_entries(entries, cb)
@@ -35,7 +36,7 @@ local function show_entries(entries, cb)
             dyn_title = function(_, e) return e.name end,
             define_preview = function(self, e)
                 vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "json")
-                vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {vim.json.encode(e.value)})
+                vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, Utils.split_lines(JSON5.stringify(e.value, 2)))
             end
         }),
 
@@ -186,7 +187,7 @@ return function(config, rootpath)
             s = s:gsub(p, v)
         end
 
-        return vim.json.decode(s)
+        return JSON5.parse(s)
     end
 
     function Workspace:get_name()

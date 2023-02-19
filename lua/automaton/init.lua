@@ -85,7 +85,7 @@ function Automaton.save_workspaces()
         table.insert(newrecents, recent)
     end
 
-    Utils.write_json(recentspath, newrecents)
+    Utils.write_json(recentspath, newrecents, 2)
 end
 
 function Automaton.update_recents(ws)
