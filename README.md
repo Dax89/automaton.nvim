@@ -1,1 +1,2 @@
 # automaton.nvim
+Coming Soon
