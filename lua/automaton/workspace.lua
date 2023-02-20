@@ -75,20 +75,20 @@ return function(config, rootpath)
         return vim.F.if_nil(wstasks.tasks, { }) or { }
     end
 
-    function Workspace:get_tasks_by_id(intasks)
-        local tasks, byid = vim.F.if_nil(intasks, self:get_tasks()), {}
+    function Workspace:get_tasks_by_name(intasks)
+        local tasks, byname = vim.F.if_nil(intasks, self:get_tasks()), {}
 
         for _, t in ipairs(tasks) do
-            if t.id then
-                if byid[t.id] then
-                    error("Duplicate task id '" .. t.id .. "'")
+            if t.name then
+                if byname[t.name] then
+                    error("Duplicate task '" .. t.name .. "'")
                 else
-                    byid[t.id] = t
+                    byname[t.name] = t
                 end
             end
         end
 
-        return byid
+        return byname
     end
 
     function Workspace:get_launch()
@@ -157,14 +157,14 @@ return function(config, rootpath)
         show_entries(tasks, function(e) self:run(e, tasks) end)
     end
 
-    function Workspace:get_depends(e, byid, depends)
+    function Workspace:get_depends(e, byname, depends)
         depends = depends or { }
 
         if vim.tbl_islist(e.depends) then
             for _, dep in ipairs(e.depends) do
-                if byid[dep] then
-                    Utils.list_reinsert(depends, byid[dep], function(a, b) return a.id == b.id end)
-                    self:get_depends(byid[dep], byid, depends)
+                if byname[dep] then
+                    Utils.list_reinsert(depends, byname[dep], function(a, b) return a.name == b.name end)
+                    self:get_depends(byname[dep], byname, depends)
                 else
                     error("Task Id '" .. dep .. "' not found")
                 end
@@ -190,8 +190,8 @@ return function(config, rootpath)
     function Workspace:run(e, tasks)
         Runner.clear_quickfix(e)
 
-        local byid = self:get_tasks_by_id(tasks)
-        local depends = self:get_depends(e, byid)
+        local byname = self:get_tasks_by_name(tasks)
+        local depends = self:get_depends(e, byname)
         table.insert(depends, e)
         self:run_depends(depends)
     end
@@ -199,8 +199,8 @@ return function(config, rootpath)
     function Workspace:launch(e, debug)
         Runner.clear_quickfix(e)
 
-        local byid = self:get_tasks_by_id()
-        local depends = self:get_depends(e, byid)
+        local byname = self:get_tasks_by_name()
+        local depends = self:get_depends(e, byname)
 
         self:run_depends(depends, function()
             Runner.launch(e, debug)
