@@ -82,7 +82,7 @@ function Runner._run_shell(cmd, options, onsuccess)
     Runner._run(runcmd, options, onsuccess)
 end
 
-function Runner._run_process(cmd, options, onsuccess)
+function Runner._parse_program(cmd, options, concat)
     local runcmd = {}
 
     if type(cmd) == "string" then
@@ -95,6 +95,11 @@ function Runner._run_process(cmd, options, onsuccess)
         vim.list_extend(runcmd, options.args)
     end
 
+    return concat and table.concat(runcmd, " ") or runcmd
+end
+
+function Runner._run_process(cmd, options, onsuccess)
+    local runcmd = Runner._parse_program(cmd, options)
     Runner._run(runcmd, options, onsuccess)
 end
 
@@ -112,6 +117,7 @@ function Runner.launch(l, debug)
     debug = vim.F.if_nil(debug, false)
 
     if debug then
+        Runner._append_quickfix(">>> " .. Runner._parse_program(l.program, l, true))
         local ok, dap = pcall(require, "dap")
         if not ok then error("DAP is not installed") end
         dap.run(l)
