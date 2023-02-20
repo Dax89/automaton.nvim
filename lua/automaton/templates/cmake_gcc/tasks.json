@@ -9,6 +9,7 @@
             cwd: "${workspaceFolder}"
         },
         {
+            id: "build_dbg"
             name: "Build Debug",
             type: "shell",
             command: "cmake --build . --config Debug -j8",
