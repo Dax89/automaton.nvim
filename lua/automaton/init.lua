@@ -61,7 +61,7 @@ function Automaton.get_buffers_for_ws(ws)
         if vim.api.nvim_buf_is_loaded(buf) then
             local filepath = vim.api.nvim_buf_get_name(buf)
 
-            if vim.startswith(filepath, ws.rootpath) then
+            if vim.startswith(filepath, ws.rootpath) and vim.fn.filereadable(filepath) == 1 then
                 table.insert(buffers, filepath)
             end
         end
