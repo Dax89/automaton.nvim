@@ -41,6 +41,25 @@ function Runner._append_output(lines, e)
     end
 end
 
+function Runner.extract_commands(e, cmdkey)
+    local osname = vim.loop.os_uname().sysname:lower()
+
+    local cmd = {
+        command = nil,
+        args = nil
+    }
+
+    if type(e[osname]) == "table" then
+        cmd.command = vim.F.if_nil(e[osname][cmdkey], e[cmdkey])
+        cmd.args = vim.F.if_nil(e[osname].args, e.args)
+    else
+        cmd.command = e[cmdkey]
+        cmd.args = e.args
+    end
+
+    return cmd
+end
+
 function Runner._run(cmd, e, onsuccess)
     e = e or { }
 
@@ -71,10 +90,10 @@ function Runner._run(cmd, e, onsuccess)
 end
 
 function Runner._run_shell(cmd, options, onsuccess)
-    local runcmd = cmd
+    local runcmd = cmd.command
 
-    if vim.tbl_islist(options.args) then
-        for _, arg in ipairs(options.args) do
+    if vim.tbl_islist(cmd.args) then
+        for _, arg in ipairs(cmd.args) do
             runcmd = runcmd .. " " .. arg
         end
     end
@@ -82,17 +101,17 @@ function Runner._run_shell(cmd, options, onsuccess)
     Runner._run(runcmd, options, onsuccess)
 end
 
-function Runner._parse_program(cmd, options, concat)
+function Runner._parse_program(cmd, concat)
     local runcmd = {}
 
-    if type(cmd) == "string" then
-        runcmd = Utils.cmdline_split(cmd)
+    if type(cmd.command) == "string" then
+        runcmd = Utils.cmdline_split(cmd.command)
     else
-        runcmd = {cmd}
+        runcmd = {cmd.command}
     end
 
-    if vim.tbl_islist(options.args) then
-        vim.list_extend(runcmd, options.args)
+    if vim.tbl_islist(cmd.args) then
+        vim.list_extend(runcmd, cmd.args)
     end
 
     return concat and table.concat(runcmd, " ") or runcmd
@@ -104,10 +123,12 @@ function Runner._run_process(cmd, options, onsuccess)
 end
 
 function Runner.run(t, onsuccess)
+    local cmd = Runner.extract_commands(t, "command")
+
     if t.type == "shell" then
-        Runner._run_shell(t.command, t, onsuccess)
+        Runner._run_shell(cmd, t, onsuccess)
     elseif t.type == "process" then
-        Runner._run_process(t.command, t, onsuccess)
+        Runner._run_process(cmd, t, onsuccess)
     else
         error(string.format("Invalid task type: '%s'", t.type))
     end
@@ -115,14 +136,15 @@ end
 
 function Runner.launch(l, debug)
     debug = vim.F.if_nil(debug, false)
+    local cmd = Runner.extract_commands(l, "program")
 
     if debug then
-        Runner._append_quickfix(">>> " .. Runner._parse_program(l.program, l, true))
+        Runner._append_quickfix(">>> " .. Runner._parse_program(cmd, true))
         local ok, dap = pcall(require, "dap")
         if not ok then error("DAP is not installed") end
         dap.run(l)
     else
-        Runner._run_process(l.program, l)
+        Runner._run_process(cmd, l)
     end
 end
 
