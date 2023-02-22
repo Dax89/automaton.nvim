@@ -37,6 +37,11 @@ end
 return function(config, rootpath)
     local Workspace = {
         rootpath = tostring(rootpath),
+        runningjobs = { },
+
+        STARTING = 1,
+        LOCK = 2,
+        STOP = nil,
     }
 
     function Workspace:ws_root()
@@ -166,28 +171,51 @@ return function(config, rootpath)
             return
         end
 
+        if self.runningjobs[depends[i].name] == self.LOCK then
+            return
+        end
+
+        self.runningjobs[depends[i].name] = self.LOCK
+
         Runner.run(self, depends[i], function()
             self:run_depends(depends, cb, i + 1)
+            self.runningjobs[depends[i].name] = self.STOP
         end)
     end
 
     function Workspace:run(e, tasks)
+        if self.runningjobs[e.name] then
+            return
+        end
+
+        self.runningjobs[e.name] = self.STARTING
         Runner.clear_quickfix(e)
 
         local byname = self:get_tasks_by_name(tasks)
         local depends = self:get_depends(e, byname)
-        table.insert(depends, e)
-        self:run_depends(depends)
+
+        self:run_depends(depends, function()
+            Runner.run(self, e, function()
+                self.runningjobs[e.name] = self.STOP
+            end)
+        end)
     end
 
     function Workspace:launch(e, debug)
+        if self.runningjobs[e.name] then
+            return
+        end
+
+        self.runningjobs[e.name] = self.STARTING
         Runner.clear_quickfix(e)
 
         local byname = self:get_tasks_by_name()
         local depends = self:get_depends(e, byname)
 
         self:run_depends(depends, function()
-            Runner.launch(self, e, debug)
+            Runner.launch(self, e, debug, function()
+                self.runningjobs[e.name] = self.STOP
+            end)
         end)
     end
 

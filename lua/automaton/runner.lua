@@ -207,7 +207,7 @@ function Runner.run(ws, t, onsuccess)
     end
 end
 
-function Runner.launch(ws, l, debug)
+function Runner.launch(ws, l, debug, onsuccess)
     debug = vim.F.if_nil(debug, false)
     local cmd = Runner.extract_commands(l, "program")
 
@@ -218,7 +218,7 @@ function Runner.launch(ws, l, debug)
         dap.run(l)
     else
         l.jobtype = Runner.TASK
-        Runner._run_process(ws, cmd, l)
+        Runner._run_process(ws, cmd, l, onsuccess)
     end
 end
 
