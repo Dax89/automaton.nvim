@@ -1,7 +1,72 @@
 local Pattern = require("automaton.pattern")
 local Utils = require("automaton.utils")
+local Dialogs = require("automaton.dialogs")
+local Previewers = require("telescope.previewers")
+local EntryDisplay = require("telescope.pickers.entry_display")
+local JSON5 = require("automaton.json5")
 
-local Runner = { }
+local Runner = {
+    jobs = { },
+
+    LAUNCH = "LAUNCH",
+    TASK = "TASK",
+}
+
+function Runner.show_jobs(config)
+    if vim.tbl_isempty(Runner.jobs) then
+        vim.notify("Job queue is empty")
+        return
+    end
+
+    local displayer = EntryDisplay.create({
+        separator = " ",
+        items = {
+            { width = 10 },
+            { width = 6 },
+            { width = 1 },
+            { remaining = true },
+        },
+    })
+
+    local make_display = function(entry)
+        return displayer({
+            { entry.pid, "TelescopeResultsNumber" },
+            { entry.type, "TelescopeResultsIdentifier" },
+            config.icons[entry.value.jobtype:lower()],
+            entry.ws:get_name() .. ": \"" .. entry.name .. "\"",
+        })
+    end
+
+    Dialogs.select(vim.tbl_values(Runner.jobs), {
+        prompt_title = "Running Jobs",
+
+        entry_maker = function(e)
+            return {
+                display = make_display,
+                ordinal = e.name,
+                name = e.name,
+                pid = vim.fn.jobpid(e.jobid),
+                type = e.jobtype,
+                ws = e.ws,
+                value = e,
+            }
+        end,
+
+        previewer = Previewers.new_buffer_previewer({
+            dyn_title = function(_, e) return e.name end,
+            define_preview = function(self, e)
+                vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "json")
+
+                local v = vim.deepcopy(e.value)
+                v.ws = nil -- Remove Workspace before apply serialization
+                vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, Utils.split_lines(JSON5.stringify(v, 2)))
+            end
+        }),
+
+    }, function(e)
+        vim.fn.jobstop(e.value.jobid)
+    end)
+end
 
 function Runner.clear_quickfix(e)
     vim.fn.setqflist({ }, " ", {title = vim.F.if_nil(e.name, "Output")})
@@ -60,8 +125,9 @@ function Runner.extract_commands(e, cmdkey)
     return cmd
 end
 
-function Runner._run(cmd, e, onsuccess)
+function Runner._run(ws, cmd, e, onsuccess)
     e = e or { }
+    e.ws = ws
 
     local options = {
         cwd = e.cwd,
@@ -77,19 +143,25 @@ function Runner._run(cmd, e, onsuccess)
         options.on_stdout = function(_, lines, _) Runner._append_output(lines, e) end
         options.on_stderr = function(_, lines, _) Runner._append_output(lines, e) end
 
-        options.on_exit = function(_, code, _)
+        options.on_exit = function(id, code, _)
             Runner._append_quickfix(">>> Job terminated with code " .. code)
 
             if vim.is_callable(onsuccess) and code == 0 then
                 onsuccess()
             end
+
+            Runner.jobs[id] = nil
         end
     end
 
-    vim.fn.jobstart(cmd, options)
+    e.jobid = vim.fn.jobstart(cmd, options)
+
+    if options.detach ~= true then
+        Runner.jobs[e.jobid] = e
+    end
 end
 
-function Runner._run_shell(cmd, options, onsuccess)
+function Runner._run_shell(ws, cmd, options, onsuccess)
     local runcmd = cmd.command
 
     if vim.tbl_islist(cmd.args) then
@@ -98,7 +170,7 @@ function Runner._run_shell(cmd, options, onsuccess)
         end
     end
 
-    Runner._run(runcmd, options, onsuccess)
+    Runner._run(ws, runcmd, options, onsuccess)
 end
 
 function Runner._parse_program(cmd, concat)
@@ -117,24 +189,25 @@ function Runner._parse_program(cmd, concat)
     return concat and table.concat(runcmd, " ") or runcmd
 end
 
-function Runner._run_process(cmd, options, onsuccess)
+function Runner._run_process(ws, cmd, options, onsuccess)
     local runcmd = Runner._parse_program(cmd, options)
-    Runner._run(runcmd, options, onsuccess)
+    Runner._run(ws, runcmd, options, onsuccess)
 end
 
-function Runner.run(t, onsuccess)
+function Runner.run(ws, t, onsuccess)
     local cmd = Runner.extract_commands(t, "command")
+    t.jobtype = Runner.TASK
 
     if t.type == "shell" then
-        Runner._run_shell(cmd, t, onsuccess)
+        Runner._run_shell(ws, cmd, t, onsuccess)
     elseif t.type == "process" then
-        Runner._run_process(cmd, t, onsuccess)
+        Runner._run_process(ws, cmd, t, onsuccess)
     else
         error(string.format("Invalid task type: '%s'", t.type))
     end
 end
 
-function Runner.launch(l, debug)
+function Runner.launch(ws, l, debug)
     debug = vim.F.if_nil(debug, false)
     local cmd = Runner.extract_commands(l, "program")
 
@@ -144,7 +217,8 @@ function Runner.launch(l, debug)
         if not ok then error("DAP is not installed") end
         dap.run(l)
     else
-        Runner._run_process(cmd, l)
+        l.jobtype = Runner.TASK
+        Runner._run_process(ws, cmd, l)
     end
 end
 

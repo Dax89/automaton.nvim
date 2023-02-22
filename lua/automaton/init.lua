@@ -269,6 +269,7 @@ function Automaton.setup(config)
     vim.api.nvim_create_user_command("AutomatonCreateWorkspace", function() Automaton.create_workspace() end, { })
     vim.api.nvim_create_user_command("AutomatonInitWorkspace", function() Automaton.init_workspace() end, { })
     vim.api.nvim_create_user_command("AutomatonLoadWorkspace", function() Automaton.load_workspace() end, { })
+    vim.api.nvim_create_user_command("AutomatonRunningJobs", function() require("automaton.runner").show_jobs(Automaton.config) end, { })
 
     vim.api.nvim_create_user_command("AutomatonOpenLaunch", function()
         local ws = Automaton.get_current_workspace()

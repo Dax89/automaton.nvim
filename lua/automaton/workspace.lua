@@ -1,36 +1,26 @@
-local Pickers = require("telescope.pickers")
-local Finders = require("telescope.finders")
 local Previewers = require("telescope.previewers")
-local Config = require("telescope.config").values
-local Actions = require("telescope.actions")
-local ActionState = require("telescope.actions.state")
 local Path = require("plenary.path")
 local Runner = require("automaton.runner")
 local Utils = require("automaton.utils")
 local JSON5 = require("automaton.json5")
+local Dialogs = require("automaton.dialogs")
 
--- https://github.com/nvim-telescope/telescope.nvim/blob/master/developers.md
 local function show_entries(entries, cb)
-    Pickers.new({ }, {
+    Dialogs.select(entries, {
         prompt_title = "Tasks",
-        sorter = Config.generic_sorter({ }),
+        entry_maker = function(e)
+            local r = {
+                value = e,
+                display = e.name,
+                ordinal = e.name,
+            }
 
-        finder = Finders.new_table({
-            results = entries,
-            entry_maker = function(e)
-                local r = {
-                    value = e,
-                    display = e.name,
-                    ordinal = e.name,
-                }
-
-                if e.default == true then
-                    r.display = r.display .. " [DEFAULT]"
-                end
-
-                return r
+            if e.default == true then
+                r.display = r.display .. " [DEFAULT]"
             end
-        }),
+
+            return r
+        end,
 
         previewer = Previewers.new_buffer_previewer({
             dyn_title = function(_, e) return e.name end,
@@ -39,15 +29,9 @@ local function show_entries(entries, cb)
                 vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, Utils.split_lines(JSON5.stringify(e.value, 2)))
             end
         }),
-
-        attach_mappings = function(promptbufnr)
-            Actions.select_default:replace(function()
-                Actions.close(promptbufnr)
-                cb(ActionState.get_selected_entry().value)
-            end)
-            return true
-        end
-    }):find()
+    }, function(e)
+        cb(e.value)
+    end)
 end
 
 return function(config, rootpath)
@@ -182,7 +166,7 @@ return function(config, rootpath)
             return
         end
 
-        Runner.run(depends[i], function()
+        Runner.run(self, depends[i], function()
             self:run_depends(depends, cb, i + 1)
         end)
     end
@@ -203,7 +187,7 @@ return function(config, rootpath)
         local depends = self:get_depends(e, byname)
 
         self:run_depends(depends, function()
-            Runner.launch(e, debug)
+            Runner.launch(self, e, debug)
         end)
     end
 

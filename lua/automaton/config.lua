@@ -2,6 +2,12 @@ return {
     debug = false,
     saveall = true,
 
+    icons = {
+        launch = "",
+        task = "",
+        -- dap = "";
+    },
+
     events = {
         workspacechanged = nil,
     },
