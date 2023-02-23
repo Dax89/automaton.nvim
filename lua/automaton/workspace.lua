@@ -205,8 +205,6 @@ return function(config, rootpath)
     end
 
     function Workspace:launch(e, debug)
-        vim.pretty_print(self.runningjobs)
-
         if self.runningjobs[e.name] then
             return
         end
