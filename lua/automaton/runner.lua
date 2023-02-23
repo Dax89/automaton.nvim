@@ -76,6 +76,10 @@ function Runner._open_quickfix()
     vim.api.nvim_command("copen")
 end
 
+function Runner._close_quickfix()
+    vim.api.nvim_command("cclose")
+end
+
 function Runner._scroll_quickfix()
     if vim.bo.buftype ~= "quickfix" then
         vim.api.nvim_command("cbottom")
@@ -212,7 +216,7 @@ function Runner.launch(ws, l, debug, onexit)
     local cmd = Runner.extract_commands(l, "program")
 
     if debug then
-        Runner._append_quickfix(">>> " .. Runner._parse_program(cmd, true))
+        Runner._close_quickfix()
         local ok, dap = pcall(require, "dap")
         if not ok then error("DAP is not installed") end
         dap.run(l)
