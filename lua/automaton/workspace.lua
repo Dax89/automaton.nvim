@@ -191,7 +191,10 @@ return function(config, rootpath)
             return
         end
 
-        self.runningjobs[e.name] = self.STARTING
+        if e.detach ~= true then -- Don't monitor detached tasks
+            self.runningjobs[e.name] = self.STARTING
+        end
+
         Runner.clear_quickfix(e)
 
         local byname = self:get_tasks_by_name(tasks)
