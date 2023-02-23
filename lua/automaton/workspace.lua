@@ -132,7 +132,7 @@ return function(config, rootpath)
     function Workspace:tasks_default()
         local task = self:get_default_task()
         if task then self:run(task)
-        else error("Default task not found")
+        else vim.notify("Default task not found")
         end
     end
 
@@ -155,7 +155,7 @@ return function(config, rootpath)
                     Utils.list_reinsert(depends, byname[dep], function(a, b) return a.name == b.name end)
                     self:get_depends(byname[dep], byname, depends)
                 else
-                    error("Task Id '" .. dep .. "' not found")
+                    error("Task '" .. dep .. "' not found")
                 end
             end
         end
@@ -177,8 +177,11 @@ return function(config, rootpath)
 
         self.runningjobs[depends[i].name] = self.LOCK
 
-        Runner.run(self, depends[i], function()
-            self:run_depends(depends, cb, i + 1)
+        Runner.run(self, depends[i], function(code)
+            if code == 0 then
+                self:run_depends(depends, cb, i + 1)
+            end
+
             self.runningjobs[depends[i].name] = self.STOP
         end)
     end
@@ -202,11 +205,16 @@ return function(config, rootpath)
     end
 
     function Workspace:launch(e, debug)
+        vim.pretty_print(self.runningjobs)
+
         if self.runningjobs[e.name] then
             return
         end
 
-        self.runningjobs[e.name] = self.STARTING
+        if not debug then -- Don't monitor DAP
+            self.runningjobs[e.name] = self.STARTING
+        end
+
         Runner.clear_quickfix(e)
 
         local byname = self:get_tasks_by_name()

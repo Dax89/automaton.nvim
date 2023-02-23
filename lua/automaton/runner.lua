@@ -125,7 +125,7 @@ function Runner.extract_commands(e, cmdkey)
     return cmd
 end
 
-function Runner._run(ws, cmd, e, onsuccess)
+function Runner._run(ws, cmd, e, onexit)
     e = e or { }
     e.ws = ws
 
@@ -146,8 +146,8 @@ function Runner._run(ws, cmd, e, onsuccess)
         options.on_exit = function(id, code, _)
             Runner._append_quickfix(">>> Job terminated with code " .. code)
 
-            if vim.is_callable(onsuccess) and code == 0 then
-                onsuccess()
+            if vim.is_callable(onexit) then
+                onexit(code)
             end
 
             Runner.jobs[id] = nil
@@ -161,7 +161,7 @@ function Runner._run(ws, cmd, e, onsuccess)
     end
 end
 
-function Runner._run_shell(ws, cmd, options, onsuccess)
+function Runner._run_shell(ws, cmd, options, onexit)
     local runcmd = cmd.command
 
     if vim.tbl_islist(cmd.args) then
@@ -170,7 +170,7 @@ function Runner._run_shell(ws, cmd, options, onsuccess)
         end
     end
 
-    Runner._run(ws, runcmd, options, onsuccess)
+    Runner._run(ws, runcmd, options, onexit)
 end
 
 function Runner._parse_program(cmd, concat)
@@ -189,25 +189,25 @@ function Runner._parse_program(cmd, concat)
     return concat and table.concat(runcmd, " ") or runcmd
 end
 
-function Runner._run_process(ws, cmd, options, onsuccess)
+function Runner._run_process(ws, cmd, options, onexit)
     local runcmd = Runner._parse_program(cmd, options)
-    Runner._run(ws, runcmd, options, onsuccess)
+    Runner._run(ws, runcmd, options, onexit)
 end
 
-function Runner.run(ws, t, onsuccess)
+function Runner.run(ws, t, onexit)
     local cmd = Runner.extract_commands(t, "command")
     t.jobtype = Runner.TASK
 
     if t.type == "shell" then
-        Runner._run_shell(ws, cmd, t, onsuccess)
+        Runner._run_shell(ws, cmd, t, onexit)
     elseif t.type == "process" then
-        Runner._run_process(ws, cmd, t, onsuccess)
+        Runner._run_process(ws, cmd, t, onexit)
     else
         error(string.format("Invalid task type: '%s'", t.type))
     end
 end
 
-function Runner.launch(ws, l, debug, onsuccess)
+function Runner.launch(ws, l, debug, onexit)
     debug = vim.F.if_nil(debug, false)
     local cmd = Runner.extract_commands(l, "program")
 
@@ -218,7 +218,7 @@ function Runner.launch(ws, l, debug, onsuccess)
         dap.run(l)
     else
         l.jobtype = Runner.TASK
-        Runner._run_process(ws, cmd, l, onsuccess)
+        Runner._run_process(ws, cmd, l, onexit)
     end
 end
 
