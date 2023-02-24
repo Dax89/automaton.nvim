@@ -167,7 +167,7 @@ return function(config, rootpath)
         i = i or 1
 
         if i > #depends then
-            if vim.is_callable(cb) then cb() end
+            if vim.is_callable(cb) then cb(true) end
             return
         end
 
@@ -180,6 +180,8 @@ return function(config, rootpath)
         Runner.run(self, depends[i], function(code)
             if code == 0 then
                 self:run_depends(depends, cb, i + 1)
+            elseif vim.is_callable(cb) then
+                cb(false)
             end
 
             self.runningjobs[depends[i].name] = self.STOP
@@ -200,10 +202,14 @@ return function(config, rootpath)
         local byname = self:get_tasks_by_name(tasks)
         local depends = self:get_depends(e, byname)
 
-        self:run_depends(depends, function()
-            Runner.run(self, e, function()
+        self:run_depends(depends, function(ok)
+            if ok then
+                Runner.run(self, e, function()
+                    self.runningjobs[e.name] = self.STOP
+                end)
+            else
                 self.runningjobs[e.name] = self.STOP
-            end)
+            end
         end)
     end
 
@@ -221,10 +227,14 @@ return function(config, rootpath)
         local byname = self:get_tasks_by_name()
         local depends = self:get_depends(e, byname)
 
-        self:run_depends(depends, function()
-            Runner.launch(self, e, debug, function()
+        self:run_depends(depends, function(ok)
+            if ok then
+                Runner.launch(self, e, debug, function()
+                    self.runningjobs[e.name] = self.STOP
+                end)
+            else
                 self.runningjobs[e.name] = self.STOP
-            end)
+            end
         end)
     end
 
