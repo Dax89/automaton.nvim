@@ -1,5 +1,7 @@
 local Utils = { }
 
+Utils.dirsep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
+
 function Utils.list_reinsert(t, inv, cmp)
     assert(vim.tbl_islist(t))
     if not cmp then cmp = function(a, b) return a == b end end

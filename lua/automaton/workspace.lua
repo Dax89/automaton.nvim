@@ -245,6 +245,7 @@ return function(config, rootpath)
     function Workspace:builtin_variables()
         return {
             env = vim.env,
+            sep = Utils.dirsep,
             os_name = vim.loop.os_uname().sysname:lower(),
             os_open = Utils.osopen_command(),
             number_of_cores = Utils.get_number_of_cores(),
