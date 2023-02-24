@@ -216,13 +216,13 @@ function Runner._parse_program(oscmd, concat)
     local runcmds = {}
 
     for _, cmd in ipairs(cmds) do
-        cmd = cmd.command or cmd
+        local c = cmd.command or cmd
         local runcmd = { }
 
-        if type(cmd.command) == "string" then
-            runcmd = Utils.cmdline_split(cmd.command or cmd)
+        if type(c) == "string" then
+            runcmd = Utils.cmdline_split(c)
         else
-            runcmd = {cmd.command}
+            runcmd = {c}
         end
 
         if vim.tbl_islist(cmd.args) then
@@ -255,7 +255,7 @@ end
 
 function Runner.launch(ws, l, debug, onexit)
     debug = vim.F.if_nil(debug, false)
-    local cmd = Runner.select_os_command(l, "program")
+    local oscmd = Runner.select_os_command(l, "program")
 
     if debug then
         Runner._close_quickfix()
@@ -264,7 +264,7 @@ function Runner.launch(ws, l, debug, onexit)
         dap.run(l)
     else
         l.jobtype = Runner.TASK
-        Runner._run_process(ws, cmd, l, onexit)
+        Runner._run_process(ws, oscmd, l, onexit)
     end
 end
 
