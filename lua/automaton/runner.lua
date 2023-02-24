@@ -110,26 +110,41 @@ function Runner._append_output(lines, e)
     end
 end
 
-function Runner.extract_commands(e, cmdkey)
+function Runner.select_os_command(e, cmdkey)
     local osname = vim.loop.os_uname().sysname:lower()
 
-    local cmd = {
+    local cmds = {
         command = nil,
         args = nil
     }
 
     if type(e[osname]) == "table" then
-        cmd.command = vim.F.if_nil(e[osname][cmdkey], e[cmdkey])
-        cmd.args = vim.F.if_nil(e[osname].args, e.args)
+        cmds.command = vim.F.if_nil(e[osname][cmdkey], e[cmdkey])
+
+        -- If command is a list, args doesn't make sense 
+        if not vim.tbl_islist(cmds.command) then
+            cmds.args = vim.F.if_nil(e[osname].args, e.args)
+        end
     else
-        cmd.command = e[cmdkey]
-        cmd.args = e.args
+        cmds.command = e[cmdkey]
+
+        -- If command is a list, args doesn't make sense 
+        if not vim.tbl_islist(cmds.command) then
+            cmds.args = e.args
+        end
     end
 
-    return cmd
+    return cmds
 end
 
-function Runner._run(ws, cmd, e, onexit)
+function Runner._run(ws, cmds, e, onexit, i)
+    assert(vim.tbl_islist(cmds))
+    i = i or 1
+
+    if i > #cmds then
+        return
+    end
+
     e = e or { }
     e.ws = ws
 
@@ -142,70 +157,97 @@ function Runner._run(ws, cmd, e, onexit)
     if options.detach ~= true then
         Runner._open_quickfix()
         vim.api.nvim_command("wincmd p") -- Go Back to the previous window
-        Runner._append_quickfix(">>> " .. (type(cmd) == "table" and table.concat(cmd, " ") or cmd))
+        Runner._append_quickfix(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]))
 
         options.on_stdout = function(_, lines, _) Runner._append_output(lines, e) end
         options.on_stderr = function(_, lines, _) Runner._append_output(lines, e) end
 
         options.on_exit = function(id, code, _)
-            Runner._append_quickfix(">>> Job terminated with code " .. code)
+            local cmdlen = #cmds
 
-            if vim.is_callable(onexit) then
+            if cmdlen > 1 then
+                local fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
+                Runner._append_quickfix(fmt)
+            else
+                Runner._append_quickfix(">>> Job terminated with code " .. code)
+            end
+
+            if i == #cmds and vim.is_callable(onexit) then
                 onexit(code)
+            else
+                Runner._run(ws, cmds, e, onexit, i + 1)
             end
 
             Runner.jobs[id] = nil
         end
     end
 
-    e.jobid = vim.fn.jobstart(cmd, options)
+    e.jobid = vim.fn.jobstart(cmds[i], options)
 
     if options.detach ~= true then
         Runner.jobs[e.jobid] = e
     end
 end
 
-function Runner._run_shell(ws, cmd, options, onexit)
-    local runcmd = cmd.command
+function Runner._run_shell(ws, oscmd, options, onexit)
+    local runcmds = Runner._parse_command(oscmd)
+    Runner._run(ws, runcmds, options, onexit)
+end
 
-    if vim.tbl_islist(cmd.args) then
-        for _, arg in ipairs(cmd.args) do
-            runcmd = runcmd .. " " .. arg
+function Runner._parse_command(oscmd)
+    local cmds = vim.tbl_islist(oscmd.command) and oscmd.command or {oscmd}
+    local runcmds = {}
+
+    for _, cmd in ipairs(cmds) do
+        local runcmd = {cmd.command or cmd}
+
+        if vim.tbl_islist(cmd.args) then
+            vim.list_extend(runcmd, cmd.args)
         end
+
+        table.insert(runcmds, table.concat(runcmd, " "))
     end
 
-    Runner._run(ws, runcmd, options, onexit)
+    return runcmds
 end
 
-function Runner._parse_program(cmd, concat)
-    local runcmd = {}
+function Runner._parse_program(oscmd, concat)
+    local cmds = vim.tbl_islist(oscmd.command) and oscmd.command or {oscmd}
+    local runcmds = {}
 
-    if type(cmd.command) == "string" then
-        runcmd = Utils.cmdline_split(cmd.command)
-    else
-        runcmd = {cmd.command}
+    for _, cmd in ipairs(cmds) do
+        cmd = cmd.command or cmd
+        local runcmd = { }
+
+        if type(cmd.command) == "string" then
+            runcmd = Utils.cmdline_split(cmd.command or cmd)
+        else
+            runcmd = {cmd.command}
+        end
+
+        if vim.tbl_islist(cmd.args) then
+            vim.list_extend(runcmd, cmd.args)
+        end
+
+        table.insert(runcmds, concat and table.concat(runcmd, " ") or runcmd)
     end
 
-    if vim.tbl_islist(cmd.args) then
-        vim.list_extend(runcmd, cmd.args)
-    end
-
-    return concat and table.concat(runcmd, " ") or runcmd
+    return runcmds
 end
 
-function Runner._run_process(ws, cmd, options, onexit)
-    local runcmd = Runner._parse_program(cmd, options)
-    Runner._run(ws, runcmd, options, onexit)
+function Runner._run_process(ws, cmds, options, onexit)
+    local runcmds = Runner._parse_program(cmds, options)
+    Runner._run(ws, runcmds, options, onexit)
 end
 
 function Runner.run(ws, t, onexit)
-    local cmd = Runner.extract_commands(t, "command")
+    local oscmd = Runner.select_os_command(t, "command")
     t.jobtype = Runner.TASK
 
     if t.type == "shell" then
-        Runner._run_shell(ws, cmd, t, onexit)
+        Runner._run_shell(ws, oscmd, t, onexit)
     elseif t.type == "process" then
-        Runner._run_process(ws, cmd, t, onexit)
+        Runner._run_process(ws, oscmd, t, onexit)
     else
         error(string.format("Invalid task type: '%s'", t.type))
     end
@@ -213,7 +255,7 @@ end
 
 function Runner.launch(ws, l, debug, onexit)
     debug = vim.F.if_nil(debug, false)
-    local cmd = Runner.extract_commands(l, "program")
+    local cmd = Runner.select_os_command(l, "program")
 
     if debug then
         Runner._close_quickfix()
