@@ -103,7 +103,7 @@ function Automaton.update_recents(ws)
         table.remove(recents, idx)
     end
 
-    table.insert(recents, {
+    table.insert(recents, 1, {
         root = ws.rootpath,
         files = Automaton.get_buffers_for_ws(ws)
     });
