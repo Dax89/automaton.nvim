@@ -30,6 +30,17 @@ function M.update_state(ws, selconfig, config, state)
             M.show_config(ws, config, state)
         end)
     else
+        vim.ui.input({
+            prompt = vim.F.if_nil(selconfig.label, selconfig.name),
+            default = vim.F.if_nil(state[selconfig.name], ""),
+        }, function(s)
+            if s then
+                state[selconfig.name] = s
+                ws:update_state(state)
+            end
+
+            M.show_config(ws, config, state)
+        end)
     end
 end
 
