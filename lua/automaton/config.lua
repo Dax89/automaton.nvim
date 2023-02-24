@@ -17,5 +17,7 @@ return {
         variablesfile = "variables.json",
         tasksfile = "tasks.json",
         launchfile = "launch.json",
+        configfile = "config.json",
+        statefile = "state.json",
     }
 }

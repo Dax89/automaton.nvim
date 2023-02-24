@@ -286,6 +286,11 @@ function Automaton.setup(config)
         if ws then ws:open_variables() end
     end, { })
 
+    vim.api.nvim_create_user_command("AutomatonShowState", function()
+        local ws = Automaton.get_current_workspace()
+        if ws then ws:show_state() end
+    end, { })
+
     vim.api.nvim_create_user_command("AutomatonLaunch", function()
         local ws = Automaton.get_current_workspace()
 
