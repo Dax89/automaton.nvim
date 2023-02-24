@@ -124,8 +124,10 @@ function ParseMeta:skip_comment(start)
         self:skip(function(c)
             if prev == "*" and c == "/" then return false end
             prev = c
-            return false
+            return true
         end)
+
+        self:next() -- Skip '/'
     else
         error("Invalid comment")
     end
