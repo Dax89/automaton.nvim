@@ -4,6 +4,7 @@ local Runner = require("automaton.runner")
 local Utils = require("automaton.utils")
 local JSON5 = require("automaton.json5")
 local Dialogs = require("automaton.dialogs")
+local Schema = require("automaton.schema")
 
 local function show_entries(entries, cb)
     Dialogs.select(entries, {
@@ -58,12 +59,18 @@ return function(config, rootpath)
     function Workspace:is_active() return self.rootpath == vim.fn.getcwd() end
     function Workspace:set_active() vim.api.nvim_set_current_dir(self.rootpath) end
 
-    function Workspace:_get_json(filename, fallback)
+    function Workspace:_get_json(filename, fallback, schema)
         fallback = fallback or { }
         local filepath = Path:new(self:ws_root(), filename)
 
+        vim.pretty_print(tostring(filepath))
+
         if filepath:is_file() then
-            return Utils.read_json(filepath)
+            if schema == true then
+                return Schema.load_file(filepath, fallback)
+            else
+                return Utils.read_json(filepath)
+            end
         end
 
         return fallback
@@ -95,7 +102,7 @@ return function(config, rootpath)
     end
 
     function Workspace:get_tasks()
-        local wstasks = vim.F.if_nil(self:read_resolved(Path:new(self:ws_root(), config.impl.tasksfile)), { })
+        local wstasks = self:_get_json(config.impl.tasksfile, { }, true)
         assert(type(wstasks) == "table")
         return vim.F.if_nil(wstasks.tasks, { }) or { }
     end
@@ -117,7 +124,7 @@ return function(config, rootpath)
     end
 
     function Workspace:get_launch()
-        local wslaunch = vim.F.if_nil(self:read_resolved(Path:new(self:ws_root(), config.impl.launchfile)), { })
+        local wslaunch = self:_get_json(config.impl.launchfile, { }, true)
         assert(type(wslaunch) == "table")
         return vim.F.if_nil(wslaunch.configurations, { })
     end
