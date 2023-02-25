@@ -6,7 +6,7 @@ local JSON5 = require("automaton.json5")
 local Dialogs = require("automaton.dialogs")
 local Schema = require("automaton.schema")
 
-local function show_entries(entries, cb)
+local function show_entries(ws, entries, cb)
     Dialogs.select(entries, {
         prompt_title = "Tasks",
         entry_maker = function(e)
@@ -26,8 +26,9 @@ local function show_entries(entries, cb)
         previewer = Previewers.new_buffer_previewer({
             dyn_title = function(_, e) return e.name end,
             define_preview = function(self, e)
+                local preview = Utils.split_lines(ws:resolve_variables(JSON5.stringify(e.value, 2), false))
                 vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "json")
-                vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, Utils.split_lines(JSON5.stringify(e.value, 2)))
+                vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, preview)
             end
         }),
     }, function(e)
@@ -54,7 +55,12 @@ return function(config, rootpath)
     function Workspace:edit_config() Dialogs.edit_config(self) end
     function Workspace:get_config() return self:_get_json(config.impl.configfile) end
     function Workspace:get_state() return self:sync_state(self:_get_json(config.impl.statefile, vim.empty_dict())) end
-    function Workspace:get_variables() return self:_get_json(config.impl.variablesfile) end
+
+    function Workspace:get_variables(parse)
+        if parse ~= false then return self:_get_json(config.impl.variablesfile) end
+        return Utils.read_file(Path:new(self:ws_root(), config.impl.variablesfile))
+    end
+
     function Workspace:get_name() return Utils.get_filename(self.rootpath) end
     function Workspace:is_active() return self.rootpath == vim.fn.getcwd() end
     function Workspace:set_active() vim.api.nvim_set_current_dir(self.rootpath) end
@@ -102,7 +108,7 @@ return function(config, rootpath)
     function Workspace:get_tasks()
         local wstasks = self:_get_json(config.impl.tasksfile, { }, true)
         assert(type(wstasks) == "table")
-        return vim.F.if_nil(wstasks.tasks, { }) or { }
+        return self:resolve_variables(vim.F.if_nil(wstasks.tasks, { }) or { })
     end
 
     function Workspace:get_tasks_by_name(intasks)
@@ -124,7 +130,7 @@ return function(config, rootpath)
     function Workspace:get_launch()
         local wslaunch = self:_get_json(config.impl.launchfile, { }, true)
         assert(type(wslaunch) == "table")
-        return vim.F.if_nil(wslaunch.configurations, { })
+        return self:resolve_variables(vim.F.if_nil(wslaunch.configurations, { }))
     end
 
     function Workspace:get_default_task()
@@ -167,12 +173,12 @@ return function(config, rootpath)
 
     function Workspace:show_launch(debug)
         local configs = self:get_launch()
-        show_entries(configs, function(e) self:launch(e, debug) end)
+        show_entries(self, configs, function(e) self:launch(e, debug) end)
     end
 
     function Workspace:show_tasks()
         local tasks = self:get_tasks()
-        show_entries(tasks, function(e) self:run(e, tasks) end)
+        show_entries(self, tasks, function(e) self:run(e, tasks) end)
     end
 
     function Workspace:get_depends(e, byname, depends)
@@ -297,22 +303,31 @@ return function(config, rootpath)
     end
 
     -- https://code.visualstudio.com/docs/editor/variables-reference
-    function Workspace:resolve_variables(s)
-        local variables = vim.tbl_extend("force", {ws = self:get_variables()}, self:builtin_variables())
-        return self:_resolve_variables(s, variables)
+    function Workspace:resolve_variables(s, parse)
+        local builtins = self:builtin_variables()
+        local variables = self:get_variables(false)
+        assert(type(variables) == "string")
+
+        local ws = self:_resolve_variables(variables, builtins) -- First resolve variables.json 
+        return self:_resolve_variables(s, vim.tbl_extend("force", {ws = ws}, builtins), parse)
     end
 
-    function Workspace:_resolve_variables(s, variables)
+    function Workspace:_resolve_variables(s, variables, parse)
         -- NOTE: If 'repl' is a table, then the table is queried for every match, 
         --       using the first capture as the key; if the pattern specifies no captures, 
         --       then the whole match is used as the key. 
         -- FROM: https://www.ibm.com/docs/en/ias?topic=manipulation-stringgsub-s-pattern-repl-n
+
+        if type(s) ~= "string" then
+            s = JSON5.stringify(s)
+        end
+
         for k, v in pairs(variables) do
             local p = type(v) == "table" and "%${" .. k .. ":([_%w]+)}" or "%${" .. k .. "}"
             s = s:gsub(p, v)
         end
 
-        return JSON5.parse(s)
+        return parse ~= false and JSON5.parse(s) or s
     end
 
     return Workspace
