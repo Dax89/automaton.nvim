@@ -135,12 +135,8 @@ return function(config, rootpath)
         vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.configfile)))
     end
 
-    function Workspace:open_state()
-        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.statefile)))
-    end
-
-    function Workspace:show_state()
-        Dialogs.show_state(self, self:get_config(), self:get_state())
+    function Workspace:edit_config()
+        Dialogs.edit_config(self)
     end
 
     function Workspace:launch_default(debug)

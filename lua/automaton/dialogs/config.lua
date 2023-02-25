@@ -3,7 +3,7 @@ local Table = require("automaton.dialogs.table")
 
 local M = { }
 
-function M.update_state(ws, selconfig, config, state)
+function M.update_config(ws, selconfig, config, state)
     if vim.tbl_islist(selconfig.choices) then
         local choices = vim.deepcopy(selconfig.choices)
         table.insert(choices, "..")
@@ -27,7 +27,7 @@ function M.update_state(ws, selconfig, config, state)
                 ws:update_state(state)
             end
 
-            M.show_config(ws, config, state)
+            M.edit_config(ws, config, state)
         end)
     else
         vim.ui.input({
@@ -39,12 +39,12 @@ function M.update_state(ws, selconfig, config, state)
                 ws:update_state(state)
             end
 
-            M.show_config(ws, config, state)
+            M.edit_config(ws, config, state)
         end)
     end
 end
 
-function M.show_config(ws, config, state)
+function M.edit_config(ws, config, state)
     if not config then return end
     if not state then return end
 
@@ -71,11 +71,14 @@ function M.show_config(ws, config, state)
             }
         end
     }, function(e)
-        M.update_state(ws, e.value, config, state)
+        M.update_config(ws, e.value, config, state)
     end)
 end
 
-local function show_config(ws, config, state)
+local function edit_config(ws)
+    local config = ws:get_config()
+    local state = ws:get_state()
+
     vim.validate({
         config = {config, "table"},
         state = {state, "table"},
@@ -85,8 +88,8 @@ local function show_config(ws, config, state)
     if vim.tbl_islist(state) then error("State must be an object") end
 
     if not vim.tbl_isempty(config) then
-        M.show_config(ws, config, state)
+        M.edit_config(ws, config, state)
     end
 end
 
-return show_config
+return edit_config
