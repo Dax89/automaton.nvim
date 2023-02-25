@@ -45,6 +45,18 @@ return function(config, rootpath)
     }
 
     function Workspace:ws_root() return tostring(Path:new(self.rootpath, config.impl.workspace)) end
+    function Workspace:ws_open(filename) vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), filename))) end
+    function Workspace:open_launch() self:ws_open(config.impl.launchfile) end
+    function Workspace:open_tasks() self:ws_open(config.impl.tasksfile) end
+    function Workspace:open_variables() self:ws_open(config.impl.variablesfile) end
+    function Workspace:open_config() self:ws_open(config.impl.configfile) end
+    function Workspace:edit_config() Dialogs.edit_config(self) end
+    function Workspace:get_config() return self:_get_json(config.impl.configfile) end
+    function Workspace:get_state() return self:sync_state(self:_get_json(config.impl.statefile, vim.empty_dict())) end
+    function Workspace:get_variables() return self:_get_json(config.impl.variablesfile) end
+    function Workspace:get_name() return Utils.get_filename(self.rootpath) end
+    function Workspace:is_active() return self.rootpath == vim.fn.getcwd() end
+    function Workspace:set_active() vim.api.nvim_set_current_dir(self.rootpath) end
 
     function Workspace:_get_json(filename, fallback)
         fallback = fallback or { }
@@ -57,9 +69,24 @@ return function(config, rootpath)
         return fallback
     end
 
-    function Workspace:get_config() return self:_get_json(config.impl.configfile) end
-    function Workspace:get_state() return self:_get_json(config.impl.statefile) end
-    function Workspace:get_variables() return self:_get_json(config.impl.variablesfile) end
+    function Workspace:sync_state(state)
+        local updated, wsconfig = false, self:get_config()
+
+        if type(wsconfig) == "table" and vim.tbl_islist(wsconfig) then
+            for _, c in ipairs(wsconfig) do
+                if state[c.name] == nil and c.default then
+                    state[c.name] = c.default
+                    updated = true
+                end
+            end
+        end
+
+        if updated then
+            self:update_state(state)
+        end
+
+        return state
+    end
 
     function Workspace:update_state(state)
         local statepath = Path:new(self:ws_root(), config.impl.statefile)
@@ -117,26 +144,6 @@ return function(config, rootpath)
         end
 
         return nil
-    end
-
-    function Workspace:open_launch()
-        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.launchfile)))
-    end
-
-    function Workspace:open_tasks()
-        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.tasksfile)))
-    end
-
-    function Workspace:open_variables()
-        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.variablesfile)))
-    end
-
-    function Workspace:open_config()
-        vim.api.nvim_command(":e " .. tostring(Path:new(self:ws_root(), config.impl.configfile)))
-    end
-
-    function Workspace:edit_config()
-        Dialogs.edit_config(self)
     end
 
     function Workspace:launch_default(debug)
@@ -301,18 +308,6 @@ return function(config, rootpath)
         end
 
         return JSON5.parse(s)
-    end
-
-    function Workspace:get_name()
-        return Utils.get_filename(self.rootpath)
-    end
-
-    function Workspace:is_active()
-        return self.rootpath == vim.fn.getcwd()
-    end
-
-    function Workspace:set_active()
-        vim.api.nvim_set_current_dir(self.rootpath)
     end
 
     return Workspace
