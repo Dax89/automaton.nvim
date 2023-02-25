@@ -63,8 +63,6 @@ return function(config, rootpath)
         fallback = fallback or { }
         local filepath = Path:new(self:ws_root(), filename)
 
-        vim.pretty_print(tostring(filepath))
-
         if filepath:is_file() then
             if schema == true then
                 return Schema.load_file(filepath, fallback)
