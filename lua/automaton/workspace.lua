@@ -57,8 +57,21 @@ return function(config, rootpath)
     function Workspace:get_state() return self:sync_state(self:_get_json(config.impl.statefile, vim.empty_dict())) end
 
     function Workspace:get_variables(parse)
-        if parse ~= false then return self:_get_json(config.impl.variablesfile) end
-        return Utils.read_file(Path:new(self:ws_root(), config.impl.variablesfile))
+        local varpath = Path:new(self:ws_root(), config.impl.variablesfile)
+
+        if parse ~= false then
+            if varpath:is_file() then
+                return self:_get_json(config.impl.variablesfile)
+            else
+                return vim.empty_dict()
+            end
+        end
+
+        if varpath:is_file() then
+            return Utils.read_file(varpath)
+        end
+
+        return "{}"
     end
 
     function Workspace:get_name() return Utils.get_filename(self.rootpath) end
@@ -107,8 +120,10 @@ return function(config, rootpath)
 
     function Workspace:get_tasks()
         local wstasks = self:_get_json(config.impl.tasksfile, { }, true)
-        assert(type(wstasks) == "table")
-        return self:resolve_variables(vim.F.if_nil(wstasks.tasks, { }) or { })
+        if wstasks then
+            return self:resolve_variables(vim.F.if_nil(wstasks.tasks, { }) or { })
+        end
+        return { }
     end
 
     function Workspace:get_tasks_by_name(intasks)
