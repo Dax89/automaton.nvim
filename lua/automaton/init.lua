@@ -160,6 +160,8 @@ function Automaton.init_workspace(filepath)
                 Automaton.load_workspace(wspath:parent())
             end
         end)
+    else
+        vim.notify("Workspace already initialized")
     end
 end
 
