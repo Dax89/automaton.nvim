@@ -1,3 +1,5 @@
+local Visitor = require("automaton.json5.visitor")
+
 local JSON5 = { }
 
 function JSON5.parse(s, options)
@@ -22,5 +24,8 @@ function JSON5.stringify(obj, indent)
     Stringify.walk(s, obj, indent, 0)
     return tostring(s)
 end
+
+JSON5.visit = Visitor.visit
+JSON5.create_visitor = Visitor.create
 
 return JSON5

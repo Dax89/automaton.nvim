@@ -7,8 +7,8 @@
             type: "shell",
 
             command:[
-                "cmake -S . -B ${ws:build_dir} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=${state:build_mode}",
-                "cp ${ws:build_dir}/compile_commands.json ${workspace_folder}"
+                "cmake -S . -B ${ws.build_dir} -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=${state.build_mode}",
+                "cp ${ws.build_dir}/compile_commands.json ${workspace_folder}"
             ],
 
             cwd: "${workspace_folder}"
@@ -16,8 +16,8 @@
         {
             name: "Build",
             type: "shell",
-            command: "cmake --build . --config ${state:build_mode} -j${number_of_cores}",
-            cwd: "${ws:build_dir}",
+            command: "cmake --build . --config ${state.build_mode} -j${number_of_cores}",
+            cwd: "${ws.build_dir}",
             default: true,
 
             problems: {
