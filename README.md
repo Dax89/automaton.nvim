@@ -1,14 +1,12 @@
 ```
-                                                                                                                        
-                  db                                                                                                               
-                 d88b                       ,d                                                    ,d                               
-                d8'`8b                      88                                                    88                               
-               d8'  `8b      88       88  MM88MMM   ,adPPYba,   88,dPYba,,adPYba,   ,adPPYYba,  MM88MMM   ,adPPYba,   8b,dPPYba,   
-              d8YaaaaY8b     88       88    88     a8"     "8a  88P'   "88"    "8a  ""     `Y8    88     a8"     "8a  88P'   `"8a  
-             d8""""""""8b    88       88    88     8b       d8  88      88      88  ,adPPPPP88    88     8b       d8  88       88  
-            d8'        `8b   "8a,   ,a88    88,    "8a,   ,a8"  88      88      88  88,    ,88    88,    "8a,   ,a8"  88       88  
-           d8'          `8b   `"YbbdP'Y8    "Y888   `"YbbdP"'   88      88      88  `"8bbdP"Y8    "Y888   `"YbbdP"'   88       88  
-                                                                                                                        
+       db                                                                                                               
+      d88b                       ,d                                                    ,d                               
+     d8'`8b                      88                                                    88                               
+    d8'  `8b      88       88  MM88MMM   ,adPPYba,   88,dPYba,,adPYba,   ,adPPYYba,  MM88MMM   ,adPPYba,   8b,dPPYba,   
+   d8YaaaaY8b     88       88    88     a8"     "8a  88P'   "88"    "8a  ""     `Y8    88     a8"     "8a  88P'   `"8a  
+  d8""""""""8b    88       88    88     8b       d8  88      88      88  ,adPPPPP88    88     8b       d8  88       88  
+ d8'        `8b   "8a,   ,a88    88,    "8a,   ,a8"  88      88      88  88,    ,88    88,    "8a,   ,a8"  88       88  
+d8'          `8b   `"YbbdP'Y8    "Y888   `"YbbdP"'   88      88      88  `"8bbdP"Y8    "Y888   `"YbbdP"'   88       88  
 ```
 <p align="center">
   <img src="https://img.shields.io/github/stars/Dax89/automaton.nvim?style=for-the-badge">
