@@ -18,6 +18,7 @@
 
 # Installation
 
+### Packer
 ```lua
 use {
   "Dax89/automaton.nvim",  
