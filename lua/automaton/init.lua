@@ -267,85 +267,54 @@ function Automaton.setup(config)
         end
     })
 
-    vim.api.nvim_create_user_command("AutomatonRecentWorkspaces", function() Automaton.recent_workspaces() end, { })
-    vim.api.nvim_create_user_command("AutomatonCreateWorkspace", function() Automaton.create_workspace() end, { })
-    vim.api.nvim_create_user_command("AutomatonInitWorkspace", function() Automaton.init_workspace() end, { })
-    vim.api.nvim_create_user_command("AutomatonLoadWorkspace", function() Automaton.load_workspace() end, { })
-    vim.api.nvim_create_user_command("AutomatonRunningJobs", function() require("automaton.runner").show_jobs(Automaton.config) end, { })
+    vim.api.nvim_create_user_command("Automaton", function(opts)
+        local action, arg = opts.fargs[1], opts.fargs[2]
+        if action == nil then error("Action required") end
 
-    vim.api.nvim_create_user_command("AutomatonOpenLaunch", function()
-        local ws = Automaton.get_current_workspace()
-        if ws then ws:open_launch() end
-    end, { })
-
-    vim.api.nvim_create_user_command("AutomatonOpenTasks", function()
-        local ws = Automaton.get_current_workspace()
-        if ws then ws:open_tasks() end
-    end, { })
-
-    vim.api.nvim_create_user_command("AutomatonOpenVariables", function()
-        local ws = Automaton.get_current_workspace()
-        if ws then ws:open_variables() end
-    end, { })
-
-    vim.api.nvim_create_user_command("AutomatonEditConfig", function()
-        local ws = Automaton.get_current_workspace()
-        if ws then ws:edit_config() end
-    end, { })
-
-    vim.api.nvim_create_user_command("AutomatonLaunch", function()
-        local ws = Automaton.get_current_workspace()
-
-        if ws then
-            Automaton.check_save()
-            ws:show_launch(false)
+        local check_arg = function()
+            if arg == nil then
+                error("Invalid argument")
+            end
         end
-    end, { })
 
-    vim.api.nvim_create_user_command("AutomatonDebug", function()
-        local ws = Automaton.get_current_workspace()
-
-        if ws then
+        if action == "create" then Automaton.create_workspace()
+        elseif action == "recents" then Automaton.recent_workspaces()
+        elseif action == "init" then Automaton.init_workspaces()
+        elseif action == "load" then Automaton.load_workspaces()
+        elseif action == "jobs" then require("automaton.runner").show_jobs(Automaton.config)
+        elseif action == "config" then
+            local ws = Automaton.get_current_workspace()
+            if ws then ws:edit_config() end
+        elseif action == "launch" or action == "debug" then
+            local ws = Automaton.get_current_workspace()
+            if not ws then return end
             Automaton.check_save()
-            ws:show_launch(true)
-        end
-    end, { })
 
-    vim.api.nvim_create_user_command("AutomatonTasks", function()
-        local ws = Automaton.get_current_workspace()
-
-        if ws then
+            if arg == "default" then ws:launch_default(action == "debug")
+            else ws:show_launch(action == "debug")
+            end
+        elseif action == "tasks" then
+            local ws = Automaton.get_current_workspace()
+            if not ws then return end
             Automaton.check_save()
-            ws:show_tasks()
+
+            if arg == "default" then ws:tasks_default()
+            else ws:show_tasks()
+            end
+        elseif action == "open" then
+            check_arg()
+            local ws = Automaton.get_current_workspace()
+            if not ws then return end
+
+            if arg == "launch" then ws:open_launch()
+            elseif arg == "tasks" then ws:open_tasks()
+            elseif arg == "variables" then ws:open_variables()
+            elseif arg == "config" then ws:open_config()
+            end
+        else
+            error("Unknown action '" .. action .. "'")
         end
-    end, { })
-
-    vim.api.nvim_create_user_command("AutomatonLaunchDefault", function()
-        local ws = Automaton.get_current_workspace()
-
-        if ws then
-            Automaton.check_save()
-            ws:launch_default(false)
-        end
-    end, { })
-
-    vim.api.nvim_create_user_command("AutomatonDebugDefault", function()
-        local ws = Automaton.get_current_workspace()
-
-        if ws then
-            Automaton.check_save()
-            ws:launch_default(true)
-        end
-    end, { })
-
-    vim.api.nvim_create_user_command("AutomatonTasksDefault", function()
-        local ws = Automaton.get_current_workspace()
-
-        if ws then
-            Automaton.check_save()
-            ws:tasks_default()
-        end
-    end, { })
+    end, { nargs = "+" })
 end
 
 return Automaton
