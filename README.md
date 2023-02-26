@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  Automaton provides VSCode-like Workspace, Tasks and Launch configuration powered with JSON5.
+  VSCode-like Workspace, Tasks and Launch configuration powered with JSON5.
 </p>
 
 # Installation
