@@ -22,17 +22,7 @@
 
             problems: {
                 ignoreoutput: false,
-
-                patterns: [
-                    {
-                        pattern: "(.+):(%d+):(%d+): (%w+): (.+)",
-                        filename: 1,
-                        lnum: 2,
-                        col: 3,
-                        type: 4,
-                        text: 5
-                    }
-                ]
+                patterns: ["${globals.patterns.gcc}"]
             }
         }
     ]

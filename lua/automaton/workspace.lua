@@ -74,7 +74,8 @@ return function(config, rootpath)
             workspace_folder = self.rootpath,
             workspace_name = self:get_name(),
             cwd = vim.fn.getcwd(),
-            state = self:get_state()
+            state = self:get_state(),
+            globals = Variable.get_globals()
         }
 
         variables.ws = Variable.resolve(self:get_variables(), variables)

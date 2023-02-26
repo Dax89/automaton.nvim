@@ -44,6 +44,13 @@ function Utils.get_filename(p)
     return vim.fn.fnamemodify(tostring(p), ":t")
 end
 
+function Utils.get_stem(p)
+    local filename = Utils.get_filename(p)
+    local idx = filename:match(".*%.()")
+    if idx == nil then return filename end
+    return filename:sub(0, idx - 2)
+end
+
 function Utils.list_reverse(l)
     vim.validate({
         l = {1, function() return vim.tbl_islist(l) end}

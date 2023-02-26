@@ -83,6 +83,17 @@ end
 
 local Variable = { }
 
+function Variable.get_globals()
+    local Utils, Path = require("automaton.utils"), require("plenary.path")
+    local globals, Scan = { }, require("plenary.scandir")
+
+    for _, p in ipairs(Scan.scan_dir(tostring(Path:new(Utils.get_plugin_root(), "globals")), {depth = 1})) do
+        globals[Utils.get_stem(p)] = Utils.read_json(p)
+    end
+
+    return globals
+end
+
 function Variable.resolve(obj, variables)
     return resolve_all(obj, variables)
 end
