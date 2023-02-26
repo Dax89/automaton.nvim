@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  VSCode-like Workspace, Tasks and Launch configuration powered with JSON5.
+  <a href="https://github.com/nvim-telescope/telescope.nvim">Telescope</a> and <a href="https://json5.org">JSON5</a> powered VSCode-like Workspace, Tasks and Launch configuration
 </p>
 
 # Installation
@@ -112,3 +112,8 @@ require("automaton").setup({
            open variables -- Open workspace's variables.json
            open config -- Open workspace's config.json
 ```
+
+# Related Projects
+- [projectmgr](https://github.com/charludo/projectmgr.nvim)
+- [project.nvim](https://github.com/ahmedkhalf/project.nvim)
+- [neovim-cmake](https://github.com/Shatur/neovim-cmake)
