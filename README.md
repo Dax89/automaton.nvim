@@ -36,6 +36,8 @@ require("automaton").setup({
     debug = false,
     
     icons = {
+        buffer = "",
+        close = "",
         launch = "",
         task = ""
     },
