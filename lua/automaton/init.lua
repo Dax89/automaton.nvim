@@ -279,8 +279,8 @@ function Automaton.setup(config)
 
         if action == "create" then Automaton.create_workspace()
         elseif action == "recents" then Automaton.recent_workspaces()
-        elseif action == "init" then Automaton.init_workspaces()
-        elseif action == "load" then Automaton.load_workspaces()
+        elseif action == "init" then Automaton.init_workspace()
+        elseif action == "load" then Automaton.load_workspace()
         elseif action == "jobs" then require("automaton.runner").show_jobs(Automaton.config)
         elseif action == "config" then
             local ws = Automaton.get_current_workspace()
