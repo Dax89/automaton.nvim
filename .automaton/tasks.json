@@ -1,17 +1,5 @@
 {
     version: "1.0.0",
 
-    tasks: [
-        {
-            name: "Run Tests",
-            type: "shell",
-            cwd: "${workspace_folder}/lua",
-            default: true,
-
-            command: [
-                "luajit tests/json5.lua",
-                "luajit tests/pattern.lua",
-            ]
-        },
-    ],
+    tasks: [ ],
 }
