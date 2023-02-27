@@ -3,6 +3,8 @@ return {
     saveall = true,
 
     icons = {
+        buffer = "",
+        close = "",
         launch = "",
         task = "",
         -- dap = "";

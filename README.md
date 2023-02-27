@@ -102,6 +102,7 @@ require("automaton").setup({
            recents -- Shows recent workspaces
            init    -- Initializes a workspace in "cwd"
            load    -- Loads a workspace in "cwd"
+           workspaces -- Manage loaded workspaces
            jobs    -- Shows running tasks/launch (can be killed too)
            config  -- Show/Edit workspace settings
            launch default [debug] -- Exec default launch configuration ("debug" is optional)

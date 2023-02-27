@@ -3,6 +3,7 @@ local Log = require("plenary.log")
 local Utils = require("automaton.utils")
 local DefaultConfig = require("automaton.config")
 local Workspace = require("automaton.workspace")
+local Dialogs = require("automaton.dialogs")
 
 local Automaton = {
     storage = Path:new(vim.fn.stdpath("data"), "automaton"),
@@ -54,7 +55,7 @@ function Automaton.has_open_buffers()
     return false
 end
 
-function Automaton.get_buffers_for_ws(ws)
+function Automaton.get_buffers_for_ws(ws, byid)
     local buffers = { }
 
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -62,7 +63,7 @@ function Automaton.get_buffers_for_ws(ws)
             local filepath = vim.api.nvim_buf_get_name(buf)
 
             if vim.startswith(filepath, ws.rootpath) and vim.fn.filereadable(filepath) == 1 then
-                table.insert(buffers, filepath)
+                table.insert(buffers, byid == true and buf or filepath)
             end
         end
     end
@@ -109,6 +110,87 @@ function Automaton.update_recents(ws)
     });
 
     Utils.write_json(recentspath, recents)
+end
+
+function Automaton.close_workspace(ws)
+    local buffers = Automaton.get_buffers_for_ws(ws, true)
+
+    Automaton.check_save()
+
+    for _, buf in ipairs(buffers) do
+        vim.api.nvim_command(":bd! " .. buf)
+    end
+
+    Automaton.workspaces[ws.rootpath] = nil
+end
+
+function Automaton._edit_workspace(ws)
+    local items = vim.tbl_map(function(filepath)
+        return {
+            icon = "buffer",
+            value = filepath,
+        }
+    end, Automaton.get_buffers_for_ws(ws))
+
+    table.insert(items, { icon = "close", value = "CLOSE" })
+    table.insert(items, { icon = nil, value = ".."})
+
+    Dialogs.select(items, {
+        prompt_title = "Workspace '" .. ws:get_name() .. "'",
+
+        entry_maker = function(e)
+            local entry = {
+                display = e.value,
+                ordinal = e.value,
+            }
+
+            if e.icon then
+                entry.display = Automaton.config.icons[e.icon] .. " " .. entry.display
+            end
+
+            return entry
+        end
+    }, function(e)
+        if e.ordinal == ".." then Automaton.show_workspaces()
+        elseif e.ordinal == "CLOSE" then Automaton.close_workspace(ws)
+        else vim.api.nvim_command(":e " .. e.ordinal)
+        end
+    end)
+end
+
+function Automaton.show_workspaces()
+    local workspaces = vim.tbl_map(function(n)
+        local ws = Automaton.workspaces[n]
+        return {
+            ws = ws,
+            files = Automaton.get_buffers_for_ws(ws)
+        }
+    end, vim.tbl_keys(Automaton.workspaces))
+
+    Dialogs.table(workspaces, {
+        prompt_title = "Workspaces",
+
+        columns = {
+            {width = 40},
+            {remaining = true}
+        },
+
+        entry_maker = function(e)
+            return {
+                ordinal = e.ws:get_name(),
+                value = e,
+            }
+        end,
+
+        displayer = function(e)
+            return {
+                {e.value.ws:get_name(), "TelescopeResultsIdentifier"},
+                {string.format("%d buffer(s)", #e.value.files), "TelescopeResultsNumber"},
+            }
+        end
+    }, function(e)
+        Automaton._edit_workspace(e.value.ws)
+    end)
 end
 
 function Automaton.recent_workspaces()
@@ -279,6 +361,7 @@ function Automaton.setup(config)
 
         if action == "create" then Automaton.create_workspace()
         elseif action == "recents" then Automaton.recent_workspaces()
+        elseif action == "workspaces" then Automaton.show_workspaces()
         elseif action == "init" then Automaton.init_workspace()
         elseif action == "load" then Automaton.load_workspace()
         elseif action == "jobs" then require("automaton.runner").show_jobs(Automaton.config)
