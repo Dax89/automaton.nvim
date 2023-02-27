@@ -42,7 +42,7 @@ require("automaton").setup({
     
     events = {
         workspacechanged = function(ws)
-          -- "ws" is the current workspace object
+          -- "ws" is the current workspace object (can be nil)
         end
     }
 })
