@@ -268,6 +268,10 @@ function Automaton.init_workspace(filepath)
 end
 
 function Automaton.check_workspace(filepath)
+    if not filepath:exists() then
+        return
+    end
+
     for _, p in ipairs(filepath:parents()) do
         if Automaton.load_workspace(p) then
             break
