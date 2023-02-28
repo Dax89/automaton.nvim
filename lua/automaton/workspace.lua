@@ -7,15 +7,19 @@ local Dialogs = require("automaton.dialogs")
 local Schema = require("automaton.schema")
 local Variable = require("automaton.variable")
 
-local function show_entries(ws, entries, cb)
+local function show_entries(config, ws, entries, options, cb)
     Dialogs.select(entries, {
-        prompt_title = "Tasks",
+        prompt_title = options.title,
         entry_maker = function(e)
             local r = {
                 value = e,
                 display = e.name,
                 ordinal = e.name,
             }
+
+            if options.icon then
+                r.display = config.icons[options.icon] .. " " .. r.display
+            end
 
             if e.default == true then
                 r.display = r.display .. " [DEFAULT]"
@@ -200,12 +204,20 @@ return function(config, rootpath)
 
     function Workspace:show_launch(debug)
         local configs = self:get_launch()
-        show_entries(self, configs, function(e) self:launch(e, debug) end)
+
+        show_entries(config, self, configs, {
+            title = "Launch",
+            icon = "launch",
+        }, function(e) self:launch(e, debug) end)
     end
 
     function Workspace:show_tasks()
         local tasks = self:get_tasks()
-        show_entries(self, tasks, function(e) self:run(e, tasks) end)
+
+        show_entries(config, self, tasks, {
+            title = "Tasks",
+            icon = "task",
+        }, function(e) self:run(e, tasks) end)
     end
 
     function Workspace:get_depends(e, byname, depends)
