@@ -8,24 +8,28 @@ local Schema = require("automaton.schema")
 local Variable = require("automaton.variable")
 
 local function show_entries(config, ws, entries, options, cb)
-    Dialogs.select(entries, {
+    Dialogs.table(entries, {
         prompt_title = options.title,
+
+        columns = {
+            {width = 1},
+            {width = 50},
+            {remaining = true},
+        },
+
         entry_maker = function(e)
-            local r = {
-                value = e,
-                display = e.name,
+            return {
                 ordinal = e.name,
+                value = e,
             }
+        end,
 
-            if options.icon then
-                r.display = config.icons[options.icon] .. " " .. r.display
-            end
-
-            if e.default == true then
-                r.display = r.display .. " [DEFAULT]"
-            end
-
-            return r
+        displayer = function(e)
+            return {
+                config.icons[options.icon],
+                {e.value.name, "TelescopeResultsIdentifier"},
+                {e.value.default == true and "DEFAULT" or "", "TelescopeResultsNumber"},
+            }
         end,
 
         previewer = Previewers.new_buffer_previewer({
