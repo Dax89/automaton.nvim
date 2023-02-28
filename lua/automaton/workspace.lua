@@ -64,9 +64,15 @@ return function(config, rootpath)
 
     -- https://code.visualstudio.com/docs/editor/variables-reference
     function Workspace:get_current_variables()
+        local filepath = vim.api.nvim_buf_get_name(0)
+
         local variables = {
             env = vim.env,
             sep = Utils.dirsep,
+            file = filepath,
+            file_name = Utils.get_filename(filepath),
+            file_stem = Utils.get_stem(filepath),
+            selected_text = Utils.get_visual_selection(),
             os_name = vim.loop.os_uname().sysname:lower(),
             os_open = Utils.osopen_command(),
             number_of_cores = Utils.get_number_of_cores(),

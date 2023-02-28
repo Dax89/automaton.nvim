@@ -2,6 +2,25 @@ local Utils = { }
 
 Utils.dirsep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
 
+function Utils.get_visual_selection()
+    local _, ssrow, sscol, _ = unpack(vim.fn.getpos("'<"))
+    local _, serow, secol, _ = unpack(vim.fn.getpos("'>"))
+    local nlines = math.abs(serow - ssrow) + 1
+
+    local lines = vim.api.nvim_buf_get_lines(0, ssrow - 1, serow, false)
+    if vim.tbl_isempty(lines) then return "" end
+
+    lines[1] = string.sub(lines[1], sscol, -1)
+
+    if nlines == 1 then
+        lines[nlines] = string.sub(lines[nlines], 1, secol - sscol + 1)
+    else
+        lines[nlines] = string.sub(lines[nlines], 1, secol)
+    end
+
+    return table.concat(lines, "\n")
+end
+
 function Utils.list_reinsert(t, inv, cmp)
     assert(vim.tbl_islist(t))
     if not cmp then cmp = function(a, b) return a == b end end
