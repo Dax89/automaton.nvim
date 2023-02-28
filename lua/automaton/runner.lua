@@ -2,7 +2,6 @@ local Pattern = require("automaton.pattern")
 local Utils = require("automaton.utils")
 local Dialogs = require("automaton.dialogs")
 local Previewers = require("telescope.previewers")
-local EntryDisplay = require("telescope.pickers.entry_display")
 local JSON5 = require("automaton.json5")
 
 local Runner = {
@@ -18,37 +17,34 @@ function Runner.show_jobs(config)
         return
     end
 
-    local displayer = EntryDisplay.create({
-        separator = " ",
-        items = {
-            { width = 10 },
-            { width = 6 },
+    Dialogs.table(vim.tbl_values(Runner.jobs), {
+        prompt_title = "Running Jobs",
+
+        columns = {
             { width = 1 },
+            { width = 6 },
+            { width = 10 },
             { remaining = true },
         },
-    })
-
-    local make_display = function(entry)
-        return displayer({
-            { entry.pid, "TelescopeResultsNumber" },
-            { entry.type, "TelescopeResultsIdentifier" },
-            config.icons[entry.value.jobtype:lower()],
-            entry.ws:get_name() .. ": \"" .. entry.name .. "\"",
-        })
-    end
-
-    Dialogs.select(vim.tbl_values(Runner.jobs), {
-        prompt_title = "Running Jobs",
 
         entry_maker = function(e)
             return {
-                display = make_display,
                 ordinal = e.name,
                 name = e.name,
                 pid = vim.fn.jobpid(e.jobid),
                 type = e.jobtype,
                 ws = e.ws,
                 value = e,
+            }
+        end,
+
+        displayer = function(e)
+            vim.pretty_print(e)
+            return {
+                config.icons[e.value.jobtype:lower()],
+                { e.type, "TelescopeResultsIdentifier" },
+                { e.pid, "TelescopeResultsNumber" },
+                e.ws:get_name() .. ": \"" .. e.name .. "\"",
             }
         end,
 
@@ -62,7 +58,6 @@ function Runner.show_jobs(config)
                 vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, Utils.split_lines(JSON5.stringify(v, 2)))
             end
         }),
-
     }, function(e)
         vim.fn.jobstop(e.value.jobid)
     end)
