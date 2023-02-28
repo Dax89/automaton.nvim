@@ -3,3 +3,5 @@
 
     tasks: [ ],
 }
+
+// vim:ft=jsonc
