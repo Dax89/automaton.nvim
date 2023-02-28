@@ -177,10 +177,22 @@ function Runner._run(ws, cmds, e, onexit, i)
         end
     end
 
-    e.jobid = vim.fn.jobstart(cmds[i], options)
+    local startjob = function()
+        e.jobid = vim.fn.jobstart(cmds[i], options)
 
-    if options.detach ~= true then
-        Runner.jobs[e.jobid] = e
+        if options.detach ~= true then
+            Runner.jobs[e.jobid] = e
+        end
+    end
+
+    local ok, err = pcall(startjob)
+
+    if not ok then
+        vim.notify(err)
+
+        if vim.is_callable(onexit) then
+            onexit(-1)
+        end
     end
 end
 
