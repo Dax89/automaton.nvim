@@ -196,15 +196,35 @@ end
 function Automaton.recent_workspaces()
     local recents = Automaton.load_recents()
 
-    vim.ui.select(recents, {
-        prompt = "Workspaces",
-        format_item = function(item)
-            return Utils.get_filename(item.root) .. " - " .. item.root
+    local gettext = function(e)
+        return Utils.get_filename(e.root) .. " - " .. e.root
+    end
+
+    Dialogs.table(recents, {
+        prompt_title = "Workspaces",
+
+        columns = {
+            {width = 1},
+            {width = 20},
+            {remaining = true}
+        },
+
+        entry_maker = function(e)
+            return {
+                ordinal = gettext(e),
+                value = e,
+            }
+        end,
+
+        displayer = function(e)
+            return {
+                Automaton.config.icons.workspace,
+                {Utils.get_filename(e.value.root), "TelescopeResultsNumber"},
+                {e.value.root, "TelescopeResultsIdentifier"},
+            }
         end
-    }, function(item)
-        if item ~= nil then
-            Automaton.load_workspace(item.root, item.files)
-        end
+    }, function(e)
+        Automaton.load_workspace(e.value.root, e.value.files)
     end)
 end
 

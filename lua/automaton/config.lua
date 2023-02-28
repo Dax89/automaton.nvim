@@ -7,6 +7,7 @@ return {
         close = "",
         launch = "",
         task = "",
+        workspace = "",
         -- dap = "";
     },
 
