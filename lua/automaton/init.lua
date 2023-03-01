@@ -33,13 +33,17 @@ function Automaton.get_templates()
 end
 
 function Automaton.load_recents()
-    local recentspath = Path:new(Automaton.storage, "recents.json")
+    local recentspath = Path:new(Automaton.storage, Automaton.config.impl.recentsfile)
     local recents = { }
 
     if recentspath:is_file() then
-        recents = vim.tbl_filter(function(proj) -- Filter deleted projects
-            return Path:new(proj.root, Automaton.config.impl.workspace):is_dir()
-        end, Utils.read_json(recentspath))
+        local recentsdata = Utils.read_json(recentspath)
+
+        if type(recentsdata) == "table" and recentsdata.version == Automaton.config.impl.VERSION then
+            recents = vim.tbl_filter(function(proj) -- Filter deleted projects
+                return Path:new(proj.root, Automaton.config.impl.workspace):is_dir()
+            end, recentsdata.recents or {})
+        end
     end
 
     return recents, recentspath
@@ -55,7 +59,9 @@ function Automaton.has_open_buffers()
     return false
 end
 
-function Automaton.get_buffers_for_ws(ws, byid)
+function Automaton.get_buffers_for_ws(ws, options)
+    options = options or { }
+
     local buffers = { }
 
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
@@ -63,7 +69,13 @@ function Automaton.get_buffers_for_ws(ws, byid)
             local filepath = vim.api.nvim_buf_get_name(buf)
 
             if vim.startswith(filepath, ws.rootpath) and vim.fn.filereadable(filepath) == 1 then
-                table.insert(buffers, byid == true and buf or filepath)
+                if options.byid == true then
+                    table.insert(buffers, buf)
+                elseif options.relative == true then
+                    table.insert(buffers, tostring(Path:new(filepath):make_relative(ws.rootpath)))
+                else
+                    table.insert(buffers, filepath)
+                end
             end
         end
     end
@@ -78,7 +90,7 @@ function Automaton.save_workspaces()
     for _, recent in ipairs(recents) do
         for _, ws in ipairs(Automaton.workspaces) do
             if recent.root == ws.rootpath then
-                recent.files = Automaton.get_buffers_for_ws(ws)
+                recent.files = Automaton.get_buffers_for_ws(ws, {relative = true})
                 break
             end
         end
@@ -86,7 +98,10 @@ function Automaton.save_workspaces()
         table.insert(newrecents, recent)
     end
 
-    Utils.write_json(recentspath, newrecents, 2)
+    Utils.write_json(recentspath, {
+        version = Automaton.config.impl.VERSION,
+        recents = newrecents
+    }, 2)
 end
 
 function Automaton.update_recents(ws)
@@ -106,14 +121,17 @@ function Automaton.update_recents(ws)
 
     table.insert(recents, 1, {
         root = ws.rootpath,
-        files = Automaton.get_buffers_for_ws(ws)
+        files = Automaton.get_buffers_for_ws(ws, {relative = true})
     });
 
-    Utils.write_json(recentspath, recents)
+    Utils.write_json(recentspath, {
+        version = Automaton.config.impl.VERSION,
+        recents = recents
+    })
 end
 
 function Automaton.close_workspace(ws)
-    local buffers = Automaton.get_buffers_for_ws(ws, true)
+    local buffers = Automaton.get_buffers_for_ws(ws, {byid = true})
 
     Automaton.check_save()
 
@@ -130,7 +148,7 @@ function Automaton._edit_workspace(ws)
             icon = "buffer",
             value = filepath,
         }
-    end, Automaton.get_buffers_for_ws(ws))
+    end, Automaton.get_buffers_for_ws(ws, {relative = true}))
 
     table.insert(items, { icon = "close", value = "CLOSE" })
     table.insert(items, { icon = nil, value = ".."})
@@ -153,7 +171,7 @@ function Automaton._edit_workspace(ws)
     }, function(e)
         if e.ordinal == ".." then Automaton.show_workspaces()
         elseif e.ordinal == "CLOSE" then Automaton.close_workspace(ws)
-        else vim.api.nvim_command(":e " .. e.ordinal)
+        else vim.api.nvim_command(":e " .. tostring(Path:new(ws.rootpath, e.ordinal)))
         end
     end)
 end
@@ -314,9 +332,10 @@ function Automaton.load_workspace(searchpath, files)
             if vim.tbl_isempty(files) and not Automaton.has_open_buffers() then
                 vim.api.nvim_command(":enew")
             else -- Reload files for this workspace
-                for _, filepath in ipairs(files) do
-                    if Path:new(filepath):is_file() then
-                        vim.api.nvim_command(":e " .. filepath)
+                for _, relpath in ipairs(files) do
+                    local filepath = Path:new(ws.rootpath, relpath)
+                    if filepath:is_file() then
+                        vim.api.nvim_command(":e " .. tostring(filepath))
                     end
                 end
             end
