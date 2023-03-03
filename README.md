@@ -34,12 +34,14 @@ use {
 ```lua
 require("automaton").setup({
     debug = false,
+    saveall = true,
     
     icons = {
         buffer = "",
         close = "",
         launch = "",
-        task = ""
+        task = "",
+        workspace = "",
     },
     
     events = {
@@ -91,8 +93,13 @@ require("automaton").setup({
             program: "node ${workspace_dir}/index.js",
             default: true, // Set as default launch configuration
             depends: ["Install dependencies"], // Always execute dependency installation
+
+            // DAP Configuration (optional)
+            type: "cppdpg", // Equals to 'dap.adapters.[key]' from your DAP config
+
+            // Extra fields are forwarded to dap.run() command
         }
-    }
+    ]
 }
 ```
 
