@@ -10,6 +10,9 @@
   <img src="https://img.shields.io/github/stars/Dax89/automaton.nvim?style=for-the-badge">
   <img src="https://img.shields.io/github/license/Dax89/automaton.nvim?style=for-the-badge">
   <img src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white">
+  <a href="https://github.com/Dax89/automaton.nvim/wiki">
+    <img src="https://img.shields.io/badge/Wiki-3c73a8?style=for-the-badge">
+  </a>
 </p>
 
 <p align="center">
@@ -52,7 +55,7 @@ require("automaton").setup({
 })
 ```
 
-# Usage example
+# Getting Started
 
 ### tasks.json
 ```json5
