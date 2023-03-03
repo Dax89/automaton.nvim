@@ -28,7 +28,7 @@ use {
   requires = { 
        {"nvim-lua/plenary.nvim"},
        {"nvim-telescope/telescope.nvim"},
-       {"mfussenegger/nvim-dap"} , -- Debug support for 'launch' configurations (Optional)
+       {"mfussenegger/nvim-dap"}, -- Debug support for 'launch' configurations (Optional)
     }
 }
 ```
