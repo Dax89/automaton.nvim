@@ -38,9 +38,9 @@ use {
 {
   "Dax89/automaton.nvim",  
   dependencies = {
-       {"nvim-lua/plenary.nvim"},
-       {"nvim-telescope/telescope.nvim"},
-       {"mfussenegger/nvim-dap"}, -- Debug support for 'launch' configurations (Optional)
+       "nvim-lua/plenary.nvim",
+       "nvim-telescope/telescope.nvim",
+       "mfussenegger/nvim-dap", -- Debug support for 'launch' configurations (Optional)
   }
 }
 ```
