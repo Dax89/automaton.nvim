@@ -440,7 +440,25 @@ function Automaton.setup(config)
         else
             error("Unknown action '" .. action .. "'")
         end
-    end, { nargs = "+" })
+    end, {
+        nargs = "+",
+        desc = 'Automaton',
+        -- The function parameters are: ArgLead, CmdLine, CursorPos
+        complete = function(_, _, _)
+            return {
+                "create",
+                "recents",
+                "workspaces",
+                "init",
+                "load",
+                "jobs",
+                "config",
+                "launch",
+                "tasks",
+                "open"
+            }
+        end
+    })
 end
 
 return Automaton
