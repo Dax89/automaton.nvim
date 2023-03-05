@@ -431,24 +431,36 @@ function Automaton.setup(config)
             error("Unknown action '" .. action .. "'")
         end
     end, {
-        nargs = "+",
-        desc = 'Automaton',
-        -- The function parameters are: ArgLead, CmdLine, CursorPos
-        complete = function(_, _, _)
-            return {
-                "create",
-                "recents",
-                "workspaces",
-                "init",
-                "load",
-                "jobs",
-                "config",
-                "launch",
-                "tasks",
-                "open"
-            }
-        end
-    })
+            nargs = "+",
+            desc = "Automaton",
+            complete = function(_, line)
+                local ws = Automaton.get_active_workspace()
+                local args = Utils.cmdline_split(line)
+                table.remove(args, 1) -- Remove 'Automaton'
+
+                local COMMANDS = {"create", "recents", "workspaces", "init", "load"}
+
+                if ws then
+                    COMMANDS = vim.list_extend(COMMANDS, {"jobs", "config", "debug", "launch", "tasks", "open"})
+                end
+
+                if vim.tbl_isempty(args) then
+                    return COMMANDS
+                end
+
+                local last = args[#args]
+
+                if ws then
+                    if last == "open" then
+                        return {"launch", "tasks", "variables", "config"}
+                    elseif last == "tasks" or last == "debug" or last == "launch" then
+                        return {"default"}
+                    end
+                end
+
+                return {}
+            end
+        })
 end
 
 return Automaton
