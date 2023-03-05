@@ -1,7 +1,20 @@
 {
     version: "1.0.0",
 
-    configurations: [ ]
+    configurations: [
+        /*
+        {
+           name: "Run",
+           request: "launch",
+           type: "<DAP Adapter Type>",
+           program: "${ws.build_dir}/myexecutable",
+           cwd: "${ws.build_dir}",
+           default: true,
+           depends: [],
+           setupCommands: []
+        },
+        */
+    ]
 }
 
 // vim:ft=jsonc

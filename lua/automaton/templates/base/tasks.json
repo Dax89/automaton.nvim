@@ -1,7 +1,19 @@
 {
     version: "1.0.0",
 
-    tasks: [ ],
+    tasks: [
+        /*
+        {
+            name: "My Task",
+            type: "shell",
+            command: "",
+            cwd: "${ws.build_dir}",
+            default: true,
+            depends: [],
+            problems: {},
+        }
+        */
+    ]
 }
 
 // vim:ft=jsonc
