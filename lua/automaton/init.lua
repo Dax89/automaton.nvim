@@ -301,20 +301,6 @@ function Automaton.check_workspace(filepath)
     end
 end
 
-function Automaton.get_current_workspace()
-    local filepath = Path:new(vim.fn.expand("%:p"))
-
-    for _, p in ipairs(filepath:parents()) do
-        local ws = Automaton.workspaces[p]
-
-        if ws then
-            return ws
-        end
-    end
-
-    return nil
-end
-
 function Automaton.load_workspace(searchpath, files)
     files = vim.F.if_nil(files, { })
 
@@ -413,10 +399,10 @@ function Automaton.setup(config)
         elseif action == "load" then Automaton.load_workspace()
         elseif action == "jobs" then require("automaton.runner").show_jobs(Automaton.config)
         elseif action == "config" then
-            local ws = Automaton.get_current_workspace()
+            local ws = Automaton.get_active_workspace()
             if ws then ws:edit_config() end
         elseif action == "launch" or action == "debug" then
-            local ws = Automaton.get_current_workspace()
+            local ws = Automaton.get_active_workspace()
             if not ws then return end
             Automaton.check_save()
 
@@ -424,7 +410,7 @@ function Automaton.setup(config)
             else ws:show_launch(action == "debug")
             end
         elseif action == "tasks" then
-            local ws = Automaton.get_current_workspace()
+            local ws = Automaton.get_active_workspace()
             if not ws then return end
             Automaton.check_save()
 
@@ -433,7 +419,7 @@ function Automaton.setup(config)
             end
         elseif action == "open" then
             check_arg()
-            local ws = Automaton.get_current_workspace()
+            local ws = Automaton.get_active_workspace()
             if not ws then return end
 
             if arg == "launch" then ws:open_launch()
