@@ -123,21 +123,23 @@ require("automaton").setup({
 # Commands
 
 ```lua
-:Automaton create  -- Create a new workspace
-           recents -- Shows recent workspaces
-           init    -- Initializes a workspace in "cwd"
-           load    -- Loads a workspace in "cwd"
-           workspaces -- Manage loaded workspaces
-           jobs    -- Shows running tasks/launch (can be killed too)
-           config  -- Show/Edit workspace settings
-           launch default [debug] -- Exec default launch configuration ("debug" is optional)
-           launch [debug] -- Select and exec a launch configuration ("debug" is optional)
-           tasks default -- Exec default task
-           tasks  -- Select and exec task
-           open launch -- Open workspace's launch.json
-           open tasks-- Open workspace's tasks.json
+:Automaton create         -- Create a new workspace
+           recents        -- Shows recent workspaces
+           init           -- Initializes a workspace in "cwd"
+           load           -- Loads a workspace in "cwd"
+           workspaces     -- Manage loaded workspaces
+           jobs           -- Shows running tasks/launch (can be killed too)
+           config         -- Show/Edit workspace settings
+           tasks default  -- Exec default task
+           tasks          -- Select and exec task
+           launch default -- Exec default launch configuration
+           launch         -- Select and exec a launch configuration
+           debug default  -- Debug default launch configuration
+           debug          -- Select and debug a launch configuration
+           open launch    -- Open workspace's launch.json
+           open tasks     -- Open workspace's tasks.json
            open variables -- Open workspace's variables.json
-           open config -- Open workspace's config.json
+           open config    -- Open workspace's config.json
 ```
 
 # Related Projects
