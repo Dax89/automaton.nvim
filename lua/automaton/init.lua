@@ -66,15 +66,19 @@ function Automaton.get_buffers_for_ws(ws, options)
 
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         if vim.api.nvim_buf_is_loaded(buf) then
-            local filepath = vim.api.nvim_buf_get_name(buf)
+            local filetype = vim.api.nvim_buf_get_option(buf, "filetype")
 
-            if vim.startswith(filepath, ws.rootpath) and vim.fn.filereadable(filepath) == 1 then
-                if options.byid == true then
-                    table.insert(buffers, buf)
-                elseif options.relative == true then
-                    table.insert(buffers, tostring(Path:new(filepath):make_relative(ws.rootpath)))
-                else
-                    table.insert(buffers, filepath)
+            if not vim.tbl_contains(Automaton.config.ignore_ft, filetype) then
+                local filepath = vim.api.nvim_buf_get_name(buf)
+
+                if vim.startswith(filepath, ws.rootpath) and vim.fn.filereadable(filepath) == 1 then
+                    if options.byid == true then
+                        table.insert(buffers, buf)
+                    elseif options.relative == true then
+                        table.insert(buffers, tostring(Path:new(filepath):make_relative(ws.rootpath)))
+                    else
+                        table.insert(buffers, filepath)
+                    end
                 end
             end
         end

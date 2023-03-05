@@ -1,6 +1,7 @@
 return {
     debug = false,
     saveall = true,
+    ignore_ft = {},
 
     icons = {
         buffer = "",

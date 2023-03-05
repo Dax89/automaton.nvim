@@ -50,6 +50,7 @@ use {
 require("automaton").setup({
     debug = false,
     saveall = true,
+    ignore_ft = { },
     
     icons = {
         buffer = "",
