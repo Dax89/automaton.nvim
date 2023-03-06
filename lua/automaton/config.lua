@@ -12,6 +12,10 @@ return {
         -- dap = "";
     },
 
+    integrations = {
+        cmp = true,
+    },
+
     events = {
         workspacechanged = nil,
     },

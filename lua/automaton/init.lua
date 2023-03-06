@@ -358,6 +358,18 @@ function Automaton._on_workspace_file_opened(arg)
     local stem = Utils.get_stem(arg.file)
     vim.api.nvim_buf_set_option(arg.buf, "filetype", "automaton" .. stem)
     vim.api.nvim_buf_set_option(arg.buf, "syntax", "jsonc")
+
+    if Automaton.config.integrations.cmp == true then
+        local ok, cmp = pcall(require, "cmp")
+
+        if ok then
+            cmp.setup.buffer({
+                sources = {
+                    {name = "automatonschema"}
+                }
+            })
+        end
+    end
 end
 
 function Automaton.setup(config)
@@ -373,6 +385,12 @@ function Automaton.setup(config)
         Log.level = Automaton.config.debug
     else
         Log.level = Automaton.config.debug and "trace" or "info"
+    end
+
+    for integ, enable in pairs(Automaton.config.integrations) do
+        if enable == true then
+            require("automaton.integrations." .. integ).integrate(Automaton)
+        end
     end
 
     local groupid = vim.api.nvim_create_augroup("Automaton", {clear = true})
