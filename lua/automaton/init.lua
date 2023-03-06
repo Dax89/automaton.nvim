@@ -348,6 +348,18 @@ function Automaton.load_workspace(searchpath, files)
     return false
 end
 
+function Automaton._get_workspace_files()
+    return vim.tbl_filter(function(x)
+        return vim.endswith(x, ".json")
+    end, vim.tbl_values(Automaton.config.impl))
+end
+
+function Automaton._on_workspace_file_opened(arg)
+    local stem = Utils.get_stem(arg.file)
+    vim.api.nvim_buf_set_option(arg.buf, "filetype", "automaton" .. stem)
+    vim.api.nvim_buf_set_option(arg.buf, "syntax", "jsonc")
+end
+
 function Automaton.setup(config)
     Automaton.config = vim.tbl_deep_extend("force", DefaultConfig, config or { })
     Automaton.config.impl = DefaultConfig.impl -- Always override 'impl' key
@@ -364,6 +376,14 @@ function Automaton.setup(config)
     end
 
     local groupid = vim.api.nvim_create_augroup("Automaton", {clear = true})
+
+    vim.api.nvim_create_autocmd({"BufNewFile", "BufRead"}, {
+        group = groupid,
+        pattern = vim.tbl_map(function(x)
+            return "*" .. Utils.dirsep .. Automaton.config.impl.workspace .. Utils.dirsep .. x
+        end, Automaton._get_workspace_files()),
+        callback = Automaton._on_workspace_file_opened
+    })
 
     vim.api.nvim_create_autocmd("BufEnter", {
         group = groupid,
