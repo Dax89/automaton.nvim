@@ -13,7 +13,7 @@ return {
     },
 
     integrations = {
-        cmp = true,
+        cmp = false,
     },
 
     events = {
