@@ -387,7 +387,6 @@ function Automaton.setup(config)
 
     vim.api.nvim_create_autocmd("BufEnter", {
         group = groupid,
-        nested = true,
         callback = function(arg)
             if #arg.file > 0 then
                 Automaton.check_workspace(Path:new(arg.file))
