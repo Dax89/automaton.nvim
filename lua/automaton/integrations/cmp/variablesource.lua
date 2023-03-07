@@ -51,21 +51,22 @@ function VariableSource:_extract(q, variables)
 end
 
 function VariableSource:complete(request, callback)
-    local type = request.context.filetype:sub(#"automaton" + 1)
+    local ft = request.context.filetype:sub(#"automaton" + 1)
     local ws = self.automaton.active
     local items = { }
 
-    if ws and not self.IGNORE_FT[type] then
+    if ws and not self.IGNORE_FT[ft] then
         local curr = request.context.cursor_before_line:sub(request.offset - 1, request.offset - 1)
         local prev = request.context.cursor_before_line:sub(request.offset - 2, request.offset - 2)
 
         if prev == '$' or curr == "." then
-            local variables = self:_extract(request.context.cursor_before_line, ws:get_current_variables(type ~= "variables"))
+            local Cmp = require("cmp")
+            local variables = self:_extract(request.context.cursor_before_line, ws:get_current_variables(ft ~= "variables"))
 
             items = vim.tbl_map(function(x)
                 return {
                     label = x,
-                    kind = require("cmp").lsp.CompletionItemKind.Variable,
+                    kind = type(variables[x]) == "table" and Cmp.lsp.CompletionItemKind.Class or Cmp.lsp.CompletionItemKind.Variable,
                     data = variables[x]
                 }
             end, vim.tbl_keys(variables))
