@@ -365,7 +365,8 @@ function Automaton._on_workspace_file_opened(arg)
         if ok then
             cmp.setup.buffer({
                 sources = {
-                    {name = "automatonschema"}
+                    {name = "automatonschema"},
+                    {name = "automatonvariable"}
                 }
             })
         end

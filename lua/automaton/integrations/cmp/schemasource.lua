@@ -7,15 +7,16 @@ function SchemaSource.new(automaton)
 end
 
 function SchemaSource:complete(request, callback)
+    local Cmp = require("cmp")
     local Schema = require("automaton.schema")
     local type = request.context.filetype:sub(#"automaton" + 1)
 
-    -- local input = request.context.cursor_before_line:sub(request.offset - 1)
-    -- local prefix = request.context.cursor_before_line:sub(1, request.offset - 1)
-
     callback({
         items = vim.tbl_map(function(x)
-            return { label = x }
+            return {
+                label = x,
+                kind = Cmp.lsp.CompletionItemKind.Field
+            }
         end, Schema[type] or {}),
     })
 end

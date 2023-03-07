@@ -11,6 +11,13 @@ local Schema = {
         "depends",
         "args",
     },
+
+    config = {
+        "name",
+        "label",
+        "choices",
+        "default",
+    }
 }
 
 Schema.tasks = vim.list_extend({

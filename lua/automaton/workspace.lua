@@ -71,7 +71,7 @@ return function(config, rootpath)
     function Workspace:set_active() vim.api.nvim_set_current_dir(self.rootpath) end
 
     -- https://code.visualstudio.com/docs/editor/variables-reference
-    function Workspace:get_current_variables()
+    function Workspace:get_current_variables(vars)
         local filepath = vim.api.nvim_buf_get_name(0)
 
         local variables = {
@@ -92,7 +92,10 @@ return function(config, rootpath)
             globals = Variable.get_globals()
         }
 
-        variables.ws = Variable.resolve(self:get_variables(), variables)
+        if vars ~= false then
+            variables.ws = Variable.resolve(self:get_variables(), variables)
+        end
+
         return variables
     end
 

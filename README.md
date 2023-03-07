@@ -29,6 +29,7 @@ use {
        {"nvim-lua/plenary.nvim"},
        {"nvim-telescope/telescope.nvim"},
        {"mfussenegger/nvim-dap"}, -- Debug support for 'launch' configurations (Optional)
+       {"hrsh7th/nvim-cmp"},      -- Autocompletion for automaton workspace files (Optional)
     }
 }
 ```
@@ -41,6 +42,7 @@ use {
        "nvim-lua/plenary.nvim",
        "nvim-telescope/telescope.nvim",
        "mfussenegger/nvim-dap", -- Debug support for 'launch' configurations (Optional)
+       "hrsh7th/nvim-cmp",      -- Autocompletion for automaton workspace files (Optional)
   }
 }
 ```
@@ -51,6 +53,10 @@ require("automaton").setup({
     debug = false,
     saveall = true,
     ignore_ft = { },
+
+    integrations = {
+        cmp = false
+    },
     
     icons = {
         buffer = "",
