@@ -13,7 +13,24 @@ function VariableSource:get_trigger_characters()
 end
 
 function VariableSource:_extract(q, variables)
-    local m = q:match("%${(.+)$")
+    local offset, succ = #q, nil
+
+    while offset >= 1 do
+        local ch = q:sub(offset, offset)
+
+        if ch == '$' and succ == '{' then
+            break
+        end
+
+        succ = ch
+        offset = offset - 1
+    end
+
+    if offset > 0 then
+        q = q:sub(offset)
+    end
+
+    local m = q:sub(3)
 
     if m then
         local parts = vim.split(m, ".", {trimempty = true, plain = true})
@@ -39,11 +56,12 @@ function VariableSource:complete(request, callback)
     local items = { }
 
     if ws and not self.IGNORE_FT[type] then
-        local variables = self:_extract(request.context.cursor_before_line, ws:get_current_variables(type == "variables"))
         local curr = request.context.cursor_before_line:sub(request.offset - 1, request.offset - 1)
         local prev = request.context.cursor_before_line:sub(request.offset - 2, request.offset - 2)
 
         if prev == '$' or curr == "." then
+            local variables = self:_extract(request.context.cursor_before_line, ws:get_current_variables(type ~= "variables"))
+
             items = vim.tbl_map(function(x)
                 return {
                     label = x,
