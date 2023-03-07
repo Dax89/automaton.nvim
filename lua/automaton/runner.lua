@@ -39,7 +39,6 @@ function Runner.show_jobs(config)
         end,
 
         displayer = function(e)
-            vim.pretty_print(e)
             return {
                 config.icons[e.value.jobtype:lower()],
                 { e.type, "TelescopeResultsIdentifier" },
