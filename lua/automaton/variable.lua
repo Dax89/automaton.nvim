@@ -48,10 +48,7 @@ local function interpolate(s, variables)
 
     for _, tok in ipairs(tokens) do
         if tok.type == "var" then
-            local v = get_variable(tok.value, variables)
-            if type(v) ~= "table" then
-                table.insert(res, v)
-            end
+            table.insert(res, get_variable(tok.value, variables))
         else
             table.insert(res, tok.value)
         end
@@ -61,7 +58,9 @@ local function interpolate(s, variables)
         return res[1]
     end
 
-    return table.concat(res)
+    return table.concat(vim.tbl_filter(function(x)
+        return type(x) ~= "table"
+    end, res))
 end
 
 local function resolve_all(obj, variables)
