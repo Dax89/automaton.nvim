@@ -32,7 +32,7 @@ function VariableSource:_extract(q, variables)
 
     local m = q:sub(3)
 
-    if m then
+    if #m > 0 then
         local parts = vim.split(m, ".", {trimempty = true, plain = true})
         local v = variables
 
