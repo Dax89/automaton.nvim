@@ -48,7 +48,10 @@ local function interpolate(s, variables)
 
     for _, tok in ipairs(tokens) do
         if tok.type == "var" then
-            table.insert(res, get_variable(tok.value, variables))
+            local v = get_variable(tok.value, variables)
+            if type(v) ~= "table" then
+                table.insert(res, v)
+            end
         else
             table.insert(res, tok.value)
         end
