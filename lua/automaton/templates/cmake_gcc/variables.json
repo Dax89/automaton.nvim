@@ -1,5 +1,3 @@
 {
     build_dir: "${workspace_folder}/../build_${workspace_name}_${state.build_mode}",
 }
-
-// vim:ft=jsonc

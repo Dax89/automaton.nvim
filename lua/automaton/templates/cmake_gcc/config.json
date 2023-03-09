@@ -6,5 +6,3 @@
         default: "Debug"
     }
 ]
-
-// vim:ft=jsonc
