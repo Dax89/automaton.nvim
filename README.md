@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/nvim-telescope/telescope.nvim">Telescope</a> and <a href="https://json5.org">JSON5</a> powered VSCode-like Workspace configuration manager.
+  <a href="https://github.com/nvim-telescope/telescope.nvim">Telescope</a> and <a href="https://json5.org">JSON5</a> powered VSCode-like Workspace configuration manager
 </p>
 
 <div align="center">
