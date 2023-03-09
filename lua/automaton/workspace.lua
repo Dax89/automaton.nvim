@@ -75,6 +75,7 @@ return function(config, rootpath)
         local filepath = vim.api.nvim_buf_get_name(0)
 
         local variables = {
+            VERSION = config.impl.VERSION,
             env = vim.env,
             sep = Utils.dirsep,
             file = filepath,
