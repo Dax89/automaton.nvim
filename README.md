@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/nvim-telescope/telescope.nvim">Telescope</a> and <a href="https://json5.org">JSON5</a> powered VSCode-like Workspace, Tasks and Launch configuration
+  <a href="https://github.com/nvim-telescope/telescope.nvim">Telescope</a> and <a href="https://json5.org">JSON5</a> powered VSCode-like Workspace configuration manager.
 </p>
 
 <div align="center">
@@ -25,9 +25,22 @@
   
 </div>
 
-# Installation
+Automaton is a Workspace configuration manager inspired to VSCode tasks/launch configurations.<br>
+Configurations are stored in JSON5 format and they allows to execute tasks, run tests/profilers/linters and even debug your code (if DAP is configured)
 
-### Packer
+## Table of Contents
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Commands](#commands)
+- [Workspace](#workspace)
+- [Keybinds](#keybinds)
+- [Contribuitng](#contributing)
+- [License](#license)
+- [Related Projects](#related-projects)
+
+## Installation
+
+#### Packer
 ```lua
 use {
   "Dax89/automaton.nvim",  
@@ -41,7 +54,7 @@ use {
 }
 ```
 
-### Lazy
+#### Lazy
 ```lua
 {
   "Dax89/automaton.nvim",  
@@ -55,7 +68,9 @@ use {
 }
 ```
 
-# Config (with defaults)
+## Configuration
+
+#### Default Config
 ```lua
 require("automaton").setup({
     debug = false,
@@ -83,10 +98,35 @@ require("automaton").setup({
 })
 ```
 
-# Getting Started
+### Commands
 
-### tasks.json
+```lua
+:Automaton create         -- Create a new workspace
+           recents        -- Shows recent workspaces
+           init           -- Initializes a workspace in "cwd"
+           load           -- Loads a workspace in "cwd"
+           workspaces     -- Manage loaded workspaces
+           jobs           -- Shows running tasks/launch (can be killed too)
+           config         -- Show/Edit workspace settings
+           tasks default  -- Exec default task
+           tasks          -- Select and exec task
+           launch default -- Exec default launch configuration
+           launch         -- Select and exec a launch configuration
+           debug default  -- Debug default launch configuration
+           debug          -- Select and debug a launch configuration
+           open launch    -- Open workspace's launch.json
+           open tasks     -- Open workspace's tasks.json
+           open variables -- Open workspace's variables.json
+           open config    -- Open workspace's config.json
+```
+
+## Workspace
+Workspace are configured with JSON5 files, the main ones are `tasks.json` and `launch.json`, the latter provide DAP integration too (if [nvim-dap](https://github.com/mfussenegger/nvim-dap) is installed).<br>
+If [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) and [LuaSnip](https://github.com/L3MON4D3/LuaSnip) integrations are enabled it's possible to edit configurations with autocompletion and snippets.
+
+Here is an example of `tasks.json` and `launch.json`:
 ```json5
+// tasks.json
 {
     version: "1.0.0",
     
@@ -112,8 +152,8 @@ require("automaton").setup({
 }
 ```
 
-### launch.json
 ```json5
+// launch.json
 {
     version: "1.0.0",
     
@@ -133,31 +173,51 @@ require("automaton").setup({
     ]
 }
 ```
-
-
-# Commands
-
+## Keybinds
+Automaton doesn't provide any keybinds, this is an example of a possible one:
 ```lua
-:Automaton create         -- Create a new workspace
-           recents        -- Shows recent workspaces
-           init           -- Initializes a workspace in "cwd"
-           load           -- Loads a workspace in "cwd"
-           workspaces     -- Manage loaded workspaces
-           jobs           -- Shows running tasks/launch (can be killed too)
-           config         -- Show/Edit workspace settings
-           tasks default  -- Exec default task
-           tasks          -- Select and exec task
-           launch default -- Exec default launch configuration
-           launch         -- Select and exec a launch configuration
-           debug default  -- Debug default launch configuration
-           debug          -- Select and debug a launch configuration
-           open launch    -- Open workspace's launch.json
-           open tasks     -- Open workspace's tasks.json
-           open variables -- Open workspace's variables.json
-           open config    -- Open workspace's config.json
+vim.keymap.set("n", "<F5>", "<CMD>Automaton launch default<CR>")
+vim.keymap.set("n", "<F6>", "<CMD>Automaton debug default<CR>")
+vim.keymap.set("n", "<F8>", "<CMD>Automaton tasks default<CR>")
+
+vim.keymap.set("n", "<leader>aC", "<CMD>Automaton create<CR>")
+vim.keymap.set("n", "<leader>aI", "<CMD>Automaton init<CR>")
+vim.keymap.set("n", "<leader>aL", "<CMD>Automaton load<CR>")
+
+vim.keymap.set("n", "<leader>ac", "<CMD>Automaton config<CR>")
+vim.keymap.set("n", "<leader>ar", "<CMD>Automaton recents<CR>")
+vim.keymap.set("n", "<leader>aw", "<CMD>Automaton workspaces<CR>")
+vim.keymap.set("n", "<leader>aj", "<CMD>Automaton jobs<CR>")
+vim.keymap.set("n", "<leader>al", "<CMD>Automaton launch<CR>")
+vim.keymap.set("n", "<leader>ad", "<CMD>Automaton debug<CR>")
+vim.keymap.set("n", "<leader>at", "<CMD>Automaton tasks<CR>")
+
+vim.keymap.set("n", "<leader>aol", "<CMD>Automaton open launch<CR>")
+vim.keymap.set("n", "<leader>aov", "<CMD>Automaton open variables<CR>")
+vim.keymap.set("n", "<leader>aot", "<CMD>Automaton open tasks<CR>")
+vim.keymap.set("n", "<leader>aoc", "<CMD>Automaton open config<CR>")
+
+-- Visual Mode
+vim.keymap.set("v", "<F5>", "<CMD><C-U>Automaton launch default<CR>")
+vim.keymap.set("v", "<F6>", "<CMD><C-U>Automaton debug default<CR>")
+vim.keymap.set("v", "<F8>", "<CMD><C-U>Automaton tasks default<CR>")
+vim.keymap.set("v", "<leader>al", "<CMD><C-U>Automaton launch<CR>")
+vim.keymap.set("v", "<leader>ad", "<CMD><C-U>Automaton debug<CR>")
+vim.keymap.set("v", "<leader>at", "<CMD><C-U>Automaton tasks<CR>")
 ```
 
-# Related Projects
+## Contributing
+Automaton's source code can be hacked easily, you can contribute in various ways:
+- Fork this repository and send a [Pull Request](https://github.com/Dax89/automaton.nvim/pulls)
+- Open an [Issue](https://github.com/Dax89/automaton.nvim/issues) with a feature request or a bug report
+- Add more [Workspace Templates](https://github.com/Dax89/automaton.nvim/tree/master/lua/automaton/templates)
+- Improve the [Wiki](https://github.com/Dax89/automaton.nvim/wiki)
+
+## License
+Automaton is licensed under the MIT License.<br>
+See the [LICENSE](LICENSE) file for details.
+
+## Related Projects
 - [projectmgr](https://github.com/charludo/projectmgr.nvim)
 - [project.nvim](https://github.com/ahmedkhalf/project.nvim)
 - [neovim-cmake](https://github.com/Shatur/neovim-cmake)
