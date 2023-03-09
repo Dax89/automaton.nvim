@@ -121,7 +121,7 @@ require("automaton").setup({
 ```
 
 ## Workspace
-Workspace are configured with JSON5 files, the main ones are `tasks.json` and `launch.json`, the latter provide DAP integration too (if [nvim-dap](https://github.com/mfussenegger/nvim-dap) is installed).<br>
+Workspaces are configured with JSON5 files, the main ones are `tasks.json` and `launch.json`, the latter provides DAP integration too (if [nvim-dap](https://github.com/mfussenegger/nvim-dap) is installed).<br>
 If [nvim-cmp](https://github.com/hrsh7th/nvim-cmp) and [LuaSnip](https://github.com/L3MON4D3/LuaSnip) integrations are enabled it's possible to edit configurations with autocompletion and snippets.
 
 Here is an example of `tasks.json` and `launch.json`:
