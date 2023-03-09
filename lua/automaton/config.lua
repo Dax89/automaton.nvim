@@ -13,6 +13,7 @@ return {
     },
 
     integrations = {
+        luasnip = false,
         cmp = false,
     },
 

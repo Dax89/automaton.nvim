@@ -363,12 +363,16 @@ function Automaton._on_workspace_file_opened(arg)
         local ok, cmp = pcall(require, "cmp")
 
         if ok then
-            cmp.setup.buffer({
-                sources = {
-                    {name = "automatonschema"},
-                    {name = "automatonvariable"}
-                }
-            })
+            local sources = {
+                {name = "automatonschema"},
+                {name = "automatonvariable"}
+            }
+
+            if Automaton.config.integrations.luasnip == true then
+                table.insert(sources, {name = "luasnip"})
+            end
+
+            cmp.setup.buffer({ sources = sources })
         end
     end
 end

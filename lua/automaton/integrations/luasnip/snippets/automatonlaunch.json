@@ -1,0 +1,39 @@
+{
+    "template": {
+        "prefix": "template",
+        "description": "Launch Template",
+        "body": [
+            "{",
+            "\tversion: \"1.0.0\",",
+            "",
+            "\tconfigurations: [ ]",
+            "}"
+        ]
+    },
+    "launch": {
+        "prefix": "launch",
+        "description": "Launch",
+        "body": [
+            "{",
+            "\tname: \"$1\",",
+            "\tprogram: \"$2\",",
+            "\tcwd: \"\\${workspace_folder\\}\",",
+            "\tdepends: [ ]",
+            "}"
+        ]
+    },
+    "launchdap": {
+        "prefix": "launchdap",
+        "description": "Launch DAP",
+        "body": [
+            "{",
+            "\tname: \"$1\",",
+            "\trequest: \"launch\",",
+            "\ttype: \"$2\",",
+            "\tprogram: \"$3\",",
+            "\tcwd: \"\\${workspace_folder\\}\",",
+            "\tdepends: [ ]",
+            "}"
+        ]
+    }
+}

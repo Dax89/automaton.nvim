@@ -55,7 +55,8 @@ require("automaton").setup({
     ignore_ft = { },
 
     integrations = {
-        cmp = false
+        luasnip = false,
+        cmp = false,
     },
     
     icons = {

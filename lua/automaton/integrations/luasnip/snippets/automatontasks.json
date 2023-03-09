@@ -1,0 +1,26 @@
+{
+    "template": {
+        "prefix": "template",
+        "description": "Main Task",
+        "body": [
+            "{",
+            "\tversion: \"1.0.0\",",
+            "",
+            "\ttasks: [ ]",
+            "}"
+        ]
+    },
+    "task": {
+        "prefix": "task",
+        "description": "Tasks",
+        "body": [
+            "{",
+            "\tname: \"$1\",",
+            "\ttype: \"shell\",",
+            "\tcommand: \"$2\",",
+            "\tcwd: \"\\${workspace_folder\\}\",",
+            "\tdepends: [ ]",
+            "}"
+        ]
+    }
+}
