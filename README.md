@@ -19,6 +19,12 @@
   <a href="https://github.com/nvim-telescope/telescope.nvim">Telescope</a> and <a href="https://json5.org">JSON5</a> powered VSCode-like Workspace, Tasks and Launch configuration
 </p>
 
+<div align="center">
+  
+  [![asciicast](https://asciinema.org/a/565957.svg)](https://asciinema.org/a/565957)
+  
+</div>
+
 # Installation
 
 ### Packer
