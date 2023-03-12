@@ -10,6 +10,7 @@ local Schema = {
         "name",
         "depends",
         "args",
+        "detach",
     },
 
     config = {
