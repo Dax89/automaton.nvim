@@ -333,19 +333,15 @@ function Automaton.load_workspace(searchpath, files)
 
         Automaton.update_recents(ws)
         Automaton.active = ws
-
-        if vim.is_callable(Automaton.config.events.workspacechanged) then
-            Automaton.config.events.workspacechanged(ws)
-        end
-
-        return true
+    else
+        Automaton.active = nil
     end
 
     if vim.is_callable(Automaton.config.events.workspacechanged) then
-        Automaton.config.events.workspacechanged(nil)
+        Automaton.config.events.workspacechanged(Automaton.active)
     end
 
-    return false
+    return Automaton.active ~= nil
 end
 
 function Automaton._get_workspace_files()
