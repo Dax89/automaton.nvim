@@ -1,5 +1,23 @@
 {
     version: "1.0.0",
 
-    configurations: [ ]
+    configurations: [
+        {
+            name: "Run",
+            type: "cppdbg",
+            request: "launch",
+            program: "${ws.build_dir}/my_executable",
+            cwd: "${ws.build_dir}",
+            depends: ["Build"],
+            default: true,
+
+            setupCommands: [
+                {
+                    text: "-enable-pretty-printing",
+                    description: "Enable pretty printing",
+                    ignoreFailures: false
+                }
+            ]
+        }
+    ]
 }
