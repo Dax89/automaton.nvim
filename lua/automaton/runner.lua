@@ -157,7 +157,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
     }
 
     if options.detach ~= true then
-        if e.term ~= true then
+        if e.terminal ~= true then
             Runner._open_quickfix()
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
 
@@ -173,7 +173,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
         end
 
         options.on_exit = function(id, code, _)
-            if e.term ~= true then
+            if e.terminal ~= true then
                 local cmdlen = #cmds
 
                 if cmdlen > 1 then
@@ -197,16 +197,17 @@ function Runner._run(config, ws, cmds, e, onexit, i)
     local startjob = function()
         Runner.close_terminal()
 
-        if e.term == true then
+        if e.terminal == true then
             Runner._close_quickfix()
-            vim.cmd(vim.F.if_nil(config.terminal.position, "botright") .. " split")
+            vim.api.nvim_command(vim.F.if_nil(config.terminal.position, "botright") .. " split")
 
             local win = vim.api.nvim_get_current_win()
             Runner.bufid = vim.api.nvim_create_buf(false, true)
             vim.api.nvim_win_set_buf(win, Runner.bufid)
-            vim.cmd("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
+            vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
 
             e.jobid = vim.fn.termopen(cmds[i], options)
+            vim.api.nvim_command("wincmd p") -- Go Back to the previous window
         else
             e.jobid = vim.fn.jobstart(cmds[i], options)
         end
@@ -302,7 +303,7 @@ function Runner.launch(config, ws, l, debug, onexit)
         if not ok then error("DAP is not installed") end
         dap.run(l)
     else
-        l.term = true
+        l.terminal = true
         l.jobtype = Runner.TASK
         Runner._run_process(config, ws, oscmd, l, onexit)
     end
