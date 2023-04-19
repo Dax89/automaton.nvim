@@ -6,6 +6,7 @@ local JSON5 = require("automaton.json5")
 
 local Runner = {
     jobs = { },
+    bufid = nil,
 
     LAUNCH = "LAUNCH",
     TASK = "TASK",
@@ -62,6 +63,13 @@ function Runner.show_jobs(config)
     end)
 end
 
+function Runner.close_terminal()
+    if Runner.bufid ~= nil then
+        vim.api.nvim_command("silent! :bd! " .. tostring(Runner.bufid))
+        Runner.bufid = nil
+    end
+end
+
 function Runner.clear_quickfix(e)
     vim.fn.setqflist({ }, " ", {title = vim.F.if_nil(e.name, "Output")})
 end
@@ -80,7 +88,7 @@ function Runner._scroll_quickfix()
     end
 end
 
-function Runner._append_quickfix(line)
+function Runner._append_quickfix_line(line)
     if type(line) == "string" then
         vim.fn.setqflist({ }, "a", {lines = {line}})
     elseif type(line) == "table" then
@@ -92,13 +100,13 @@ function Runner._append_quickfix(line)
     Runner._scroll_quickfix()
 end
 
-function Runner._append_output(lines, e)
+function Runner._append_quickfix(lines, e)
     for _, line in ipairs(lines) do
         if string.len(line) > 0 then
             local res = Pattern.resolve(line, e)
 
             if res then
-                Runner._append_quickfix(res)
+                Runner._append_quickfix_line(res)
             end
         end
     end
@@ -131,7 +139,7 @@ function Runner.select_os_command(e, cmdkey)
     return cmds
 end
 
-function Runner._run(ws, cmds, e, onexit, i)
+function Runner._run(config, ws, cmds, e, onexit, i)
     assert(vim.tbl_islist(cmds))
     i = i or 1
 
@@ -149,21 +157,31 @@ function Runner._run(ws, cmds, e, onexit, i)
     }
 
     if options.detach ~= true then
-        Runner._open_quickfix()
-        vim.api.nvim_command("wincmd p") -- Go Back to the previous window
-        Runner._append_quickfix(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]))
+        if e.term ~= true then
+            Runner._open_quickfix()
+            vim.api.nvim_command("wincmd p") -- Go Back to the previous window
 
-        options.on_stdout = function(_, lines, _) Runner._append_output(lines, e) end
-        options.on_stderr = function(_, lines, _) Runner._append_output(lines, e) end
+            Runner._append_quickfix_line(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]))
+
+            options.on_stdout = function(_, lines, _)
+                Runner._append_quickfix(lines, e)
+            end
+
+            options.on_stderr = function(_, lines, _)
+                Runner._append_quickfix(lines, e)
+            end
+        end
 
         options.on_exit = function(id, code, _)
-            local cmdlen = #cmds
+            if e.term ~= true then
+                local cmdlen = #cmds
 
-            if cmdlen > 1 then
-                local fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
-                Runner._append_quickfix(fmt)
-            else
-                Runner._append_quickfix(">>> Job terminated with code " .. code)
+                if cmdlen > 1 then
+                    local fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
+                    Runner._append_quickfix_line(fmt)
+                else
+                    Runner._append_quickfix_line(">>> Job terminated with code " .. code)
+                end
             end
 
             if i == #cmds and vim.is_callable(onexit) then
@@ -177,7 +195,21 @@ function Runner._run(ws, cmds, e, onexit, i)
     end
 
     local startjob = function()
-        e.jobid = vim.fn.jobstart(cmds[i], options)
+        Runner.close_terminal()
+
+        if e.term == true then
+            Runner._close_quickfix()
+            vim.cmd(vim.F.if_nil(config.terminal.position, "botright") .. " split")
+
+            local win = vim.api.nvim_get_current_win()
+            Runner.bufid = vim.api.nvim_create_buf(false, true)
+            vim.api.nvim_win_set_buf(win, Runner.bufid)
+            vim.cmd("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
+
+            e.jobid = vim.fn.termopen(cmds[i], options)
+        else
+            e.jobid = vim.fn.jobstart(cmds[i], options)
+        end
 
         if options.detach ~= true then
             Runner.jobs[e.jobid] = e
@@ -195,9 +227,14 @@ function Runner._run(ws, cmds, e, onexit, i)
     end
 end
 
-function Runner._run_shell(ws, oscmd, options, onexit)
+function Runner._run_shell(config, ws, oscmd, options, onexit)
     local runcmds = Runner._parse_command(oscmd)
-    Runner._run(ws, runcmds, options, onexit)
+    Runner._run(config, ws, runcmds, options, onexit)
+end
+
+function Runner._run_process(config, ws, cmds, options, onexit)
+    local runcmds = Runner._parse_program(cmds, options)
+    Runner._run(config, ws, runcmds, options, onexit)
 end
 
 function Runner._parse_command(oscmd)
@@ -241,36 +278,33 @@ function Runner._parse_program(oscmd, concat)
     return runcmds
 end
 
-function Runner._run_process(ws, cmds, options, onexit)
-    local runcmds = Runner._parse_program(cmds, options)
-    Runner._run(ws, runcmds, options, onexit)
-end
-
-function Runner.run(ws, t, onexit)
+function Runner.run(config, ws, t, onexit)
     local oscmd = Runner.select_os_command(t, "command")
     t.jobtype = Runner.TASK
 
     if t.type == "shell" then
-        Runner._run_shell(ws, oscmd, t, onexit)
+        Runner._run_shell(config, ws, oscmd, t, onexit)
     elseif t.type == "process" then
-        Runner._run_process(ws, oscmd, t, onexit)
+        Runner._run_process(config, ws, oscmd, t, onexit)
     else
         error(string.format("Invalid task type: '%s'", t.type))
     end
 end
 
-function Runner.launch(ws, l, debug, onexit)
+function Runner.launch(config, ws, l, debug, onexit)
     debug = vim.F.if_nil(debug, false)
     local oscmd = Runner.select_os_command(l, "program")
 
     if debug then
         Runner._close_quickfix()
+        Runner.close_terminal()
         local ok, dap = pcall(require, "dap")
         if not ok then error("DAP is not installed") end
         dap.run(l)
     else
+        l.term = true
         l.jobtype = Runner.TASK
-        Runner._run_process(ws, oscmd, l, onexit)
+        Runner._run_process(config, ws, oscmd, l, onexit)
     end
 end
 

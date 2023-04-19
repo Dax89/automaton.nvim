@@ -3,6 +3,11 @@ return {
     saveall = true,
     ignore_ft = {},
 
+    terminal = {
+        position = "botright",
+        size = 10,
+    },
+
     icons = {
         buffer = "",
         close = "",

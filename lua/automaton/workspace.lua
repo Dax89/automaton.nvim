@@ -259,7 +259,7 @@ return function(config, rootpath)
 
         self.runningjobs[depends[i].name] = self.LOCK
 
-        Runner.run(self, depends[i], function(code)
+        Runner.run(config, self, depends[i], function(code)
             if code == 0 then
                 self:run_depends(depends, cb, i + 1)
             elseif vim.is_callable(cb) then
@@ -286,7 +286,7 @@ return function(config, rootpath)
 
         self:run_depends(depends, function(ok)
             if ok then
-                Runner.run(self, e, function()
+                Runner.run(config, self, e, function()
                     self.runningjobs[e.name] = self.STOP
                 end)
             else
@@ -304,6 +304,7 @@ return function(config, rootpath)
             self.runningjobs[e.name] = self.STARTING
         end
 
+        Runner.close_terminal()
         Runner.clear_quickfix(e)
 
         local byname = self:get_tasks_by_name()
@@ -311,7 +312,7 @@ return function(config, rootpath)
 
         self:run_depends(depends, function(ok)
             if ok then
-                Runner.launch(self, e, debug, function()
+                Runner.launch(config, self, e, debug, function()
                     self.runningjobs[e.name] = self.STOP
                 end)
             else
