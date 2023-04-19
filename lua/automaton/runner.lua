@@ -187,7 +187,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
             if i == #cmds and vim.is_callable(onexit) then
                 onexit(code)
             else
-                Runner._run(ws, cmds, e, onexit, i + 1)
+                Runner._run(config, ws, cmds, e, onexit, i + 1)
             end
 
             Runner.jobs[id] = nil
