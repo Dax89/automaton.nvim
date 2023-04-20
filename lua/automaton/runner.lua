@@ -6,7 +6,8 @@ local JSON5 = require("automaton.json5")
 
 local Runner = {
     jobs = { },
-    bufid = nil,
+    termwinid = nil,
+    termbufid = nil,
 
     LAUNCH = "LAUNCH",
     TASK = "TASK",
@@ -64,9 +65,11 @@ function Runner.show_jobs(config)
 end
 
 function Runner.close_terminal()
-    if Runner.bufid ~= nil then
-        vim.api.nvim_command("silent! :bd! " .. tostring(Runner.bufid))
-        Runner.bufid = nil
+    if Runner.termbufid ~= nil then
+        vim.api.nvim_win_close(Runner.termwinid, true)
+        vim.api.nvim_command("silent! :bd! " .. tostring(Runner.termbufid))
+        Runner.termbufid = nil
+        Runner.termwinid = nil
     end
 end
 
@@ -82,8 +85,12 @@ function Runner._close_quickfix()
     vim.api.nvim_command("cclose")
 end
 
-function Runner._scroll_quickfix()
-    if vim.bo.buftype ~= "quickfix" then
+function Runner._scroll_output()
+    if Runner.termbufid ~= nil then
+        if Runner.termbufid ~= vim.api.nvim_get_current_buf() then
+            vim.fn.win_execute(Runner.termwinid, "norm G")
+        end
+    elseif vim.bo.buftype ~= "quickfix" then
         vim.api.nvim_command("cbottom")
     end
 end
@@ -97,7 +104,7 @@ function Runner._append_quickfix_line(line)
         return
     end
 
-    Runner._scroll_quickfix()
+    Runner._scroll_output()
 end
 
 function Runner._append_quickfix(lines, e)
@@ -157,23 +164,26 @@ function Runner._run(config, ws, cmds, e, onexit, i)
     }
 
     if options.detach ~= true then
-        if e.terminal ~= true then
+        if e.quickfix == true then
             Runner._open_quickfix()
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
 
             Runner._append_quickfix_line(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]))
+        end
 
-            options.on_stdout = function(_, lines, _)
+        local handleoutput = function(_, lines, _)
+            if e.quickfix == true then
                 Runner._append_quickfix(lines, e)
-            end
-
-            options.on_stderr = function(_, lines, _)
-                Runner._append_quickfix(lines, e)
+            else
+                Runner._scroll_output()
             end
         end
 
+        options.on_stdout = handleoutput
+        options.on_stderr = handleoutput
+
         options.on_exit = function(id, code, _)
-            if e.terminal ~= true then
+            if e.quickfix == true then
                 local cmdlen = #cmds
 
                 if cmdlen > 1 then
@@ -182,6 +192,8 @@ function Runner._run(config, ws, cmds, e, onexit, i)
                 else
                     Runner._append_quickfix_line(">>> Job terminated with code " .. code)
                 end
+            else
+                Runner._scroll_output()
             end
 
             if i == #cmds and vim.is_callable(onexit) then
@@ -197,19 +209,19 @@ function Runner._run(config, ws, cmds, e, onexit, i)
     local startjob = function()
         Runner.close_terminal()
 
-        if e.terminal == true then
+        if e.quickfix == true then
+            e.jobid = vim.fn.jobstart(cmds[i], options)
+        else
             Runner._close_quickfix()
             vim.api.nvim_command(vim.F.if_nil(config.terminal.position, "botright") .. " split")
 
-            local win = vim.api.nvim_get_current_win()
-            Runner.bufid = vim.api.nvim_create_buf(false, true)
-            vim.api.nvim_win_set_buf(win, Runner.bufid)
+            Runner.termwinid = vim.api.nvim_get_current_win()
+            Runner.termbufid = vim.api.nvim_create_buf(false, true)
+            vim.api.nvim_win_set_buf(Runner.termwinid, Runner.termbufid)
             vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
 
             e.jobid = vim.fn.termopen(cmds[i], options)
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
-        else
-            e.jobid = vim.fn.jobstart(cmds[i], options)
         end
 
         if options.detach ~= true then
@@ -303,7 +315,6 @@ function Runner.launch(config, ws, l, debug, onexit)
         if not ok then error("DAP is not installed") end
         dap.run(l)
     else
-        l.terminal = true
         l.jobtype = Runner.TASK
         Runner._run_process(config, ws, oscmd, l, onexit)
     end
