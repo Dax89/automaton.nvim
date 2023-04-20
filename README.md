@@ -77,6 +77,11 @@ require("automaton").setup({
     saveall = true,
     ignore_ft = { },
 
+    terminal = {
+        position = "botright",
+        size = 10,
+    },
+
     integrations = {
         luasnip = false,
         cmp = false,
