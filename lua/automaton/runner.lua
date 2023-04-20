@@ -66,8 +66,12 @@ end
 
 function Runner.close_terminal()
     if Runner.termbufid ~= nil then
-        vim.api.nvim_win_close(Runner.termwinid, true)
+        if vim.fn.winbufnr(Runner.termbufid) ~= -1 then
+            vim.api.nvim_win_close(Runner.termwinid, true)
+        end
+
         vim.api.nvim_command("silent! :bd! " .. tostring(Runner.termbufid))
+
         Runner.termbufid = nil
         Runner.termwinid = nil
     end
