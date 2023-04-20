@@ -19,6 +19,7 @@
             command: "cmake --build . --config ${state.build_mode} -j${number_of_cores}",
             cwd: "${ws.build_dir}",
             default: true,
+            quickfix: true,
 
             problems: {
                 ignoreoutput: false,

@@ -6,6 +6,7 @@ local Schema = {
     common = {
         "version",
         "default",
+        "quickfix",
         "type",
         "name",
         "depends",
