@@ -213,6 +213,11 @@ function Runner._run(config, ws, cmds, e, onexit, i)
     local startjob = function()
         Runner.close_terminal()
 
+        if e.detach == true then
+            vim.fn.jobstart(cmds[i], options)
+            return
+        end
+
         if e.quickfix == true then
             e.jobid = vim.fn.jobstart(cmds[i], options)
         else
@@ -228,9 +233,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
         end
 
-        if options.detach ~= true then
-            Runner.jobs[e.jobid] = e
-        end
+        Runner.jobs[e.jobid] = e
     end
 
     local ok, err = pcall(startjob)
