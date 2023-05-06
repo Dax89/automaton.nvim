@@ -22,8 +22,8 @@ function M.update_config(ws, selconfig, config, state)
             end
 
         }, function(e)
-            if e.display ~= ".." then
-                state[selconfig.name] = e.display
+            if e.ordinal ~= ".." then
+                state[selconfig.name] = e.ordinal
                 ws:update_state(state)
             end
 
