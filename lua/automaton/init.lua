@@ -251,7 +251,7 @@ function Automaton.recent_workspaces()
 end
 
 function Automaton.create_workspace()
-    vim.ui.input("Workspace name", function(wsname)
+    vim.ui.input({prompt = "Workspace name "}, function(wsname)
         if wsname and string.len(wsname) then
             require("automaton.picker").select_folder(function(p)
                 Automaton.init_workspace(Path:new(p, wsname))
