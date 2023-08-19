@@ -138,13 +138,13 @@ Here is an example of `tasks.json` and `launch.json`:
     tasks: [
         {
             name: "Init NPM",
-            cwd: "${workspace_dir}",
+            cwd: "${workspace_folder}",
             type: "shell",
             command: "npm init -y",
         },
         {
             name: "Install dependencies",
-            cwd: "${workspace_dir}",
+            cwd: "${workspace_folder}",
             type: "shell",
             command: "npm install .",
         },
@@ -165,8 +165,8 @@ Here is an example of `tasks.json` and `launch.json`:
     configurations: [
         {
             name: "Execute index",
-            cwd: "${workspace_dir}",
-            program: "node ${workspace_dir}/index.js",
+            cwd: "${workspace_folder}",
+            program: "node ${workspace_folder}/index.js",
             default: true, // Set as default launch configuration
             depends: ["Install dependencies"], // Always execute dependency installation
 

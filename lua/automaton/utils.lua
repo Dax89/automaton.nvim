@@ -1,6 +1,6 @@
 local Utils = { }
 
-Utils.dirsep = vim.loop.os_uname().sysname == "Windows" and "\\" or "/"
+Utils.dirsep = (vim.loop.os_uname().sysname == "Windows" or vim.loop.os_uname().sysname == "Windows_NT") and "\\" or "/"
 
 function Utils.get_visual_selection()
     local _, ssrow, sscol, _ = unpack(vim.fn.getpos("'<"))
@@ -115,7 +115,7 @@ function Utils.osopen_command()
     local uname = vim.loop.os_uname().sysname
     local cmd = nil
 
-    if uname == "Windows" then cmd = "cmd /c start"
+    if uname == "Windows" or uname == "Windows_NT" then cmd = "cmd /c start"
     elseif uname == "Darwin" then cmd = "open"
     elseif uname == "Linux" then cmd = "xdg-open"
     else error("Unsupported Platform '" .. uname .. "'")
