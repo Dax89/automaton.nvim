@@ -200,8 +200,10 @@ function Runner._run(config, ws, cmds, e, onexit, i)
                 Runner._scroll_output()
             end
 
-            if i == #cmds and vim.is_callable(onexit) then
-                onexit(code)
+            if code ~= 0 or i == #cmds then
+                if vim.is_callable(onexit) then
+                    onexit(code)
+                end
             else
                 Runner._run(config, ws, cmds, e, onexit, i + 1)
             end
