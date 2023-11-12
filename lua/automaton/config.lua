@@ -4,8 +4,21 @@ return {
     ignore_ft = {},
 
     terminal = {
+        COLORS = {
+            black = 30,
+            red = 31,
+            green = 32,
+            yellow = 33,
+            blue = 34,
+            magenta = 35,
+            cyan = 36,
+            white = 37
+        },
+
         position = "botright",
         size = 10,
+        color = 32,   -- Green
+        altcolor = 33 -- Yellow
     },
 
     icons = {

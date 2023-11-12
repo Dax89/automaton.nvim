@@ -5,7 +5,8 @@ local Previewers = require("telescope.previewers")
 local JSON5 = require("automaton.json5")
 
 local Runner = {
-    jobs = { },
+    jobs = {},
+    termchanid = nil,
     termwinid = nil,
     termbufid = nil,
 
@@ -44,7 +45,7 @@ function Runner.show_jobs(config)
             return {
                 config.icons[e.value.jobtype:lower()],
                 { e.type, "TelescopeResultsIdentifier" },
-                { e.pid, "TelescopeResultsNumber" },
+                { e.pid,  "TelescopeResultsNumber" },
                 e.ws:get_name() .. ": \"" .. e.name .. "\"",
             }
         end,
@@ -72,13 +73,14 @@ function Runner.close_terminal()
 
         vim.api.nvim_command("silent! :bd! " .. tostring(Runner.termbufid))
 
+        Runner.termchanid = nil
         Runner.termbufid = nil
         Runner.termwinid = nil
     end
 end
 
 function Runner.clear_quickfix(e)
-    vim.fn.setqflist({ }, " ", {title = vim.F.if_nil(e.name, "Output")})
+    vim.fn.setqflist({}, " ", { title = vim.F.if_nil(e.name, "Output") })
 end
 
 function Runner._open_quickfix()
@@ -99,11 +101,38 @@ function Runner._scroll_output()
     end
 end
 
-function Runner._append_quickfix_line(line)
+function Runner._append_line(line, color)
+    -- HACK: https://github.com/neovim/neovim/issues/14557
+    local sendlines = function(x)
+        local lines = vim.split(x, "\n")
+        for _, l in ipairs(lines) do
+            if l ~= "" then
+                if color then
+                    vim.api.nvim_chan_send(Runner.termchanid, "\027[" .. color .. "m ")
+                end
+                vim.api.nvim_chan_send(Runner.termchanid, l)
+                if color then
+                    vim.api.nvim_chan_send(Runner.termchanid, "\027[0m")
+                end
+                vim.api.nvim_chan_send(Runner.termchanid, "\r\n")
+            end
+        end
+    end
+
     if type(line) == "string" then
-        vim.fn.setqflist({ }, "a", {lines = {line}})
+        if Runner.termbufid ~= nil then
+            sendlines(line)
+        else
+            vim.fn.setqflist({}, "a", { lines = { line } })
+        end
     elseif type(line) == "table" then
-        vim.fn.setqflist({line}, "a")
+        if Runner.termbufid ~= nil then
+            for _, l in ipairs(line) do
+                sendlines(l)
+            end
+        else
+            vim.fn.setqflist({ line }, "a")
+        end
     else
         return
     end
@@ -111,15 +140,19 @@ function Runner._append_quickfix_line(line)
     Runner._scroll_output()
 end
 
-function Runner._append_quickfix(lines, e)
-    for _, line in ipairs(lines) do
-        if string.len(line) > 0 then
-            local res = Pattern.resolve(line, e)
+function Runner._append_output(lines, e)
+    if e.quickfix == true then
+        for _, line in ipairs(lines) do
+            if string.len(line) > 0 then
+                local res = Pattern.resolve(line, e)
 
-            if res then
-                Runner._append_quickfix_line(res)
+                if res then
+                    Runner._append_line(res)
+                end
             end
         end
+    else
+        Runner._append_line(lines)
     end
 end
 
@@ -134,14 +167,14 @@ function Runner.select_os_command(e, cmdkey)
     if type(e[osname]) == "table" then
         cmds.command = vim.F.if_nil(e[osname][cmdkey], e[cmdkey])
 
-        -- If command is a list, args doesn't make sense 
+        -- If command is a list, args doesn't make sense
         if not vim.tbl_islist(cmds.command) then
             cmds.args = vim.F.if_nil(e[osname].args, e.args)
         end
     else
         cmds.command = e[cmdkey]
 
-        -- If command is a list, args doesn't make sense 
+        -- If command is a list, args doesn't make sense
         if not vim.tbl_islist(cmds.command) then
             cmds.args = e.args
         end
@@ -158,7 +191,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
         return
     end
 
-    e = e or { }
+    e = e or {}
     e.ws = ws
 
     local options = {
@@ -171,33 +204,25 @@ function Runner._run(config, ws, cmds, e, onexit, i)
         if e.quickfix == true then
             Runner._open_quickfix()
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
-
-            Runner._append_quickfix_line(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]))
+        else
+            options.pty = true
         end
 
         local handleoutput = function(_, lines, _)
-            if e.quickfix == true then
-                Runner._append_quickfix(lines, e)
-            else
-                Runner._scroll_output()
-            end
+            Runner._append_output(lines, e)
         end
 
         options.on_stdout = handleoutput
         options.on_stderr = handleoutput
 
         options.on_exit = function(id, code, _)
-            if e.quickfix == true then
-                local cmdlen = #cmds
+            local cmdlen = #cmds
 
-                if cmdlen > 1 then
-                    local fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
-                    Runner._append_quickfix_line(fmt)
-                else
-                    Runner._append_quickfix_line(">>> Job terminated with code " .. code)
-                end
+            if cmdlen > 1 then
+                local fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
+                Runner._append_line(fmt, config.terminal.color)
             else
-                Runner._scroll_output()
+                Runner._append_line(">>> Job terminated with code " .. code, config.terminal.color)
             end
 
             if code ~= 0 or i == #cmds then
@@ -213,25 +238,32 @@ function Runner._run(config, ws, cmds, e, onexit, i)
     end
 
     local startjob = function()
-        Runner.close_terminal()
-
         if e.detach == true then
             vim.fn.jobstart(cmds[i], options)
             return
         end
 
         if e.quickfix == true then
+            Runner.close_terminal()
             e.jobid = vim.fn.jobstart(cmds[i], options)
         else
             Runner._close_quickfix()
-            vim.api.nvim_command(vim.F.if_nil(config.terminal.position, "botright") .. " split")
 
-            Runner.termwinid = vim.api.nvim_get_current_win()
-            Runner.termbufid = vim.api.nvim_create_buf(false, true)
-            vim.api.nvim_win_set_buf(Runner.termwinid, Runner.termbufid)
-            vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
+            if Runner.termbufid == nil or vim.fn.getbufinfo(Runner.termbufid)[1].hidden == 1 then
+                Runner.close_terminal()
+                vim.api.nvim_command(vim.F.if_nil(config.terminal.position, "botright") .. " split")
+                Runner.termwinid = vim.api.nvim_get_current_win()
+                Runner.termbufid = vim.api.nvim_create_buf(false, true)
+                Runner.termchanid = vim.api.nvim_open_term(Runner.termbufid, {})
+                vim.api.nvim_win_set_buf(Runner.termwinid, Runner.termbufid)
+                vim.api.nvim_buf_set_name(Runner.termbufid, e.name)
+                vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
+            end
 
-            e.jobid = vim.fn.termopen(cmds[i], options)
+            Runner._append_line(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
+                config.terminal.altcolor)
+
+            e.jobid = vim.fn.jobstart(cmds[i], options)
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
         end
 
@@ -260,11 +292,11 @@ function Runner._run_process(config, ws, cmds, options, onexit)
 end
 
 function Runner._parse_command(oscmd)
-    local cmds = vim.tbl_islist(oscmd.command) and oscmd.command or {oscmd}
+    local cmds = vim.tbl_islist(oscmd.command) and oscmd.command or { oscmd }
     local runcmds = {}
 
     for _, cmd in ipairs(cmds) do
-        local runcmd = {cmd.command or cmd}
+        local runcmd = { cmd.command or cmd }
 
         if vim.tbl_islist(cmd.args) then
             vim.list_extend(runcmd, cmd.args)
@@ -277,17 +309,17 @@ function Runner._parse_command(oscmd)
 end
 
 function Runner._parse_program(oscmd, concat)
-    local cmds = vim.tbl_islist(oscmd.command) and oscmd.command or {oscmd}
+    local cmds = vim.tbl_islist(oscmd.command) and oscmd.command or { oscmd }
     local runcmds = {}
 
     for _, cmd in ipairs(cmds) do
         local c = cmd.command or cmd
-        local runcmd = { }
+        local runcmd = {}
 
         if type(c) == "string" then
             runcmd = Utils.cmdline_split(c)
         else
-            runcmd = {c}
+            runcmd = { c }
         end
 
         if vim.tbl_islist(cmd.args) then
