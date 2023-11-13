@@ -1,6 +1,21 @@
-local Utils = { }
+local Utils = {}
+
+Utils.colors = {
+    black = 30,
+    red = 31,
+    green = 32,
+    yellow = 33,
+    blue = 34,
+    magenta = 35,
+    cyan = 36,
+    white = 37
+}
 
 Utils.dirsep = (vim.loop.os_uname().sysname == "Windows" or vim.loop.os_uname().sysname == "Windows_NT") and "\\" or "/"
+
+function Utils.colorize(s, color)
+    return string.format("\027[%dm%s\027[0m", color, s)
+end
 
 function Utils.get_visual_selection()
     local _, ssrow, sscol, _ = unpack(vim.fn.getpos("'<"))
@@ -42,7 +57,7 @@ function Utils.list_reinsert(t, inv, cmp)
 end
 
 function Utils.split_lines(s)
-    local result = { }
+    local result = {}
 
     for line in s:gmatch("[^\n]+") do
         table.insert(result, line)
@@ -72,10 +87,10 @@ end
 
 function Utils.list_reverse(l)
     vim.validate({
-        l = {1, function() return vim.tbl_islist(l) end}
+        l = { 1, function() return vim.tbl_islist(l) end }
     })
 
-    local rev = { }
+    local rev = {}
 
     for i = #l, 1, -1 do
         rev[#rev + 1] = l[i]
@@ -85,7 +100,7 @@ function Utils.list_reverse(l)
 end
 
 function Utils.cmdline_split(s)
-    local cmd, w = { }, { }
+    local cmd, w = {}, {}
     local quote, escape = false, false
 
     for c in s:gmatch(".") do
@@ -98,7 +113,7 @@ function Utils.cmdline_split(s)
         elseif c == ' ' and not quote and not escape then
             table.remove(w, #w) -- Remove Last ' '
             table.insert(cmd, table.concat(w))
-            w = { }
+            w = {}
         elseif escape then
             escape = false
         end
@@ -115,10 +130,14 @@ function Utils.osopen_command()
     local uname = vim.loop.os_uname().sysname
     local cmd = nil
 
-    if uname == "Windows" or uname == "Windows_NT" then cmd = "cmd /c start"
-    elseif uname == "Darwin" then cmd = "open"
-    elseif uname == "Linux" then cmd = "xdg-open"
-    else error("Unsupported Platform '" .. uname .. "'")
+    if uname == "Windows" or uname == "Windows_NT" then
+        cmd = "cmd /c start"
+    elseif uname == "Darwin" then
+        cmd = "open"
+    elseif uname == "Linux" then
+        cmd = "xdg-open"
+    else
+        error("Unsupported Platform '" .. uname .. "'")
     end
 
     return cmd

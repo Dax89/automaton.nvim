@@ -85,6 +85,7 @@ require("automaton").setup({
     integrations = {
         luasnip = false,
         cmp = false,
+        cmdcolor = require("automaton.utils").colors.yellow,
     },
     
     icons = {

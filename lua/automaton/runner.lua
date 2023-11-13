@@ -101,19 +101,13 @@ function Runner._scroll_output()
     end
 end
 
-function Runner._append_line(line, color)
+function Runner._append_line(line)
     -- HACK: https://github.com/neovim/neovim/issues/14557
     local sendlines = function(x)
         local lines = vim.split(x, "\n")
         for _, l in ipairs(lines) do
             if l ~= "" then
-                if color then
-                    vim.api.nvim_chan_send(Runner.termchanid, "\027[" .. color .. "m ")
-                end
                 vim.api.nvim_chan_send(Runner.termchanid, l)
-                if color then
-                    vim.api.nvim_chan_send(Runner.termchanid, "\027[0m")
-                end
                 vim.api.nvim_chan_send(Runner.termchanid, "\r\n")
             end
         end
@@ -183,6 +177,14 @@ function Runner.select_os_command(e, cmdkey)
     return cmds
 end
 
+function Runner._colorize(s, color, e)
+    if e.quickfix == true then
+        return s
+    end
+
+    return Utils.colorize(s, color)
+end
+
 function Runner._run(config, ws, cmds, e, onexit, i)
     assert(vim.tbl_islist(cmds))
     i = i or 1
@@ -216,14 +218,16 @@ function Runner._run(config, ws, cmds, e, onexit, i)
         options.on_stderr = handleoutput
 
         options.on_exit = function(id, code, _)
-            local cmdlen = #cmds
+            local cmdlen, fmt = #cmds, nil
+            local rescolor = code == 0 and Utils.colors.green or Utils.colors.red
 
             if cmdlen > 1 then
-                local fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
-                Runner._append_line(fmt, config.terminal.color)
+                fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
             else
-                Runner._append_line(">>> Job terminated with code " .. code, config.terminal.color)
+                fmt = string.format(">>> Job terminated with code %d", code)
             end
+
+            Runner._append_line(Runner._colorize(fmt, rescolor, e))
 
             if code ~= 0 or i == #cmds then
                 if vim.is_callable(onexit) then
@@ -260,8 +264,9 @@ function Runner._run(config, ws, cmds, e, onexit, i)
                 vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
             end
 
-            Runner._append_line(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
-                config.terminal.altcolor)
+            Runner._append_line(
+                Runner._colorize(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
+                    config.terminal.cmdcolor, e))
 
             e.jobid = vim.fn.jobstart(cmds[i], options)
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
