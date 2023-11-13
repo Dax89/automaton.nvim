@@ -222,9 +222,9 @@ function Runner._run(config, ws, cmds, e, onexit, i)
             local rescolor = code == 0 and Utils.colors.green or Utils.colors.red
 
             if cmdlen > 1 then
-                fmt = string.format(">>> Job %d/%d terminated with code %d", i, cmdlen, code)
+                fmt = string.format("** Job %d/%d terminated with code %d", i, cmdlen, code)
             else
-                fmt = string.format(">>> Job terminated with code %d", code)
+                fmt = string.format("** Job terminated with code %d", code)
             end
 
             Runner._append_line(Runner._colorize(fmt, rescolor, e))
@@ -265,7 +265,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
             end
 
             Runner._append_line(
-                Runner._colorize(">>> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
+                Runner._colorize(">> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
                     config.terminal.cmdcolor, e))
 
             e.jobid = vim.fn.jobstart(cmds[i], options)
