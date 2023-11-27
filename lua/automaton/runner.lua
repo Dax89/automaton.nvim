@@ -247,10 +247,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
             return
         end
 
-        if e.quickfix == true then
-            Runner.close_terminal()
-            e.jobid = vim.fn.jobstart(cmds[i], options)
-        else
+        if e.quickfix ~= true then
             Runner._close_quickfix()
 
             if Runner.termbufid == nil or vim.fn.getbufinfo(Runner.termbufid)[1].hidden == 1 then
@@ -263,12 +260,17 @@ function Runner._run(config, ws, cmds, e, onexit, i)
                 vim.api.nvim_buf_set_name(Runner.termbufid, e.name)
                 vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
             end
+        else
+            Runner.close_terminal()
+        end
 
-            Runner._append_line(
-                Runner._colorize(">> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
-                    config.terminal.cmdcolor, e))
+        Runner._append_line(
+            Runner._colorize(">> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
+                config.terminal.cmdcolor, e))
 
-            e.jobid = vim.fn.jobstart(cmds[i], options)
+        e.jobid = vim.fn.jobstart(cmds[i], options)
+
+        if e.quickfix ~= true then
             vim.api.nvim_command("wincmd p") -- Go Back to the previous window
         end
 
