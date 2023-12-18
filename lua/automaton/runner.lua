@@ -258,6 +258,7 @@ function Runner._run(config, ws, cmds, e, onexit, i)
                 Runner.termchanid = vim.api.nvim_open_term(Runner.termbufid, {})
                 vim.api.nvim_win_set_buf(Runner.termwinid, Runner.termbufid)
                 vim.api.nvim_buf_set_name(Runner.termbufid, e.name)
+                vim.api.nvim_buf_set_option(Runner.termbufid, "filetype", "automaton-terminal")
                 vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
             end
         else
