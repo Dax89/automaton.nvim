@@ -7,7 +7,7 @@ local Dialogs = require("automaton.dialogs")
 
 local Automaton = {
     storage = Path:new(vim.fn.stdpath("data"), "automaton"),
-    workspaces = { },
+    workspaces = {},
     config = nil,
     active = nil,
 }
@@ -23,9 +23,9 @@ function Automaton.check_save()
 end
 
 function Automaton.get_templates()
-    local templates, Scan = { }, require("plenary.scandir")
+    local templates, Scan = {}, require("plenary.scandir")
 
-    for _, p in ipairs(Scan.scan_dir(tostring(Path:new(Utils.get_plugin_root(), "templates")), {only_dirs = true, depth = 1})) do
+    for _, p in ipairs(Scan.scan_dir(tostring(Path:new(Utils.get_plugin_root(), "templates")), { only_dirs = true, depth = 1 })) do
         templates[Utils.get_filename(p)] = Path:new(p)
     end
 
@@ -34,7 +34,7 @@ end
 
 function Automaton.load_recents()
     local recentspath = Path:new(Automaton.storage, Automaton.config.impl.recentsfile)
-    local recents = { }
+    local recents = {}
 
     if recentspath:is_file() then
         local recentsdata = Utils.read_json(recentspath)
@@ -60,9 +60,9 @@ function Automaton.has_open_buffers()
 end
 
 function Automaton.get_buffers_for_ws(ws, options)
-    options = options or { }
+    options = options or {}
 
-    local buffers = { }
+    local buffers = {}
 
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         if vim.api.nvim_buf_is_loaded(buf) then
@@ -89,12 +89,12 @@ end
 
 function Automaton.save_workspaces()
     local recents, recentspath = Automaton.load_recents()
-    local newrecents = { }
+    local newrecents = {}
 
     for _, recent in ipairs(recents) do
         for _, ws in ipairs(Automaton.workspaces) do
             if recent.root == ws.rootpath then
-                recent.files = Automaton.get_buffers_for_ws(ws, {relative = true})
+                recent.files = Automaton.get_buffers_for_ws(ws, { relative = true })
                 break
             end
         end
@@ -110,7 +110,7 @@ end
 
 function Automaton.update_recents(ws)
     local recents, recentspath = Automaton.load_recents()
-    local p, idx  = ws.rootpath, -1
+    local p, idx               = ws.rootpath, -1
 
     for i, proj in ipairs(recents) do
         if proj.root == p then
@@ -125,7 +125,7 @@ function Automaton.update_recents(ws)
 
     table.insert(recents, 1, {
         root = ws.rootpath,
-        files = Automaton.get_buffers_for_ws(ws, {relative = true})
+        files = Automaton.get_buffers_for_ws(ws, { relative = true })
     });
 
     Utils.write_json(recentspath, {
@@ -135,7 +135,7 @@ function Automaton.update_recents(ws)
 end
 
 function Automaton.close_workspace(ws)
-    local buffers = Automaton.get_buffers_for_ws(ws, {byid = true})
+    local buffers = Automaton.get_buffers_for_ws(ws, { byid = true })
 
     Automaton.check_save()
 
@@ -152,10 +152,10 @@ function Automaton._edit_workspace(ws)
             icon = "buffer",
             value = filepath,
         }
-    end, Automaton.get_buffers_for_ws(ws, {relative = true}))
+    end, Automaton.get_buffers_for_ws(ws, { relative = true }))
 
     table.insert(items, { icon = "close", value = "CLOSE" })
-    table.insert(items, { icon = nil, value = ".."})
+    table.insert(items, { icon = nil, value = ".." })
 
     Dialogs.select(items, {
         prompt_title = "Workspace '" .. ws:get_name() .. "'",
@@ -173,9 +173,12 @@ function Automaton._edit_workspace(ws)
             return entry
         end
     }, function(e)
-        if e.ordinal == ".." then Automaton.show_workspaces()
-        elseif e.ordinal == "CLOSE" then Automaton.close_workspace(ws)
-        else vim.api.nvim_command(":e " .. tostring(Path:new(ws.rootpath, e.ordinal)))
+        if e.ordinal == ".." then
+            Automaton.show_workspaces()
+        elseif e.ordinal == "CLOSE" then
+            Automaton.close_workspace(ws)
+        else
+            vim.api.nvim_command(":e " .. tostring(Path:new(ws.rootpath, e.ordinal)))
         end
     end)
 end
@@ -193,8 +196,8 @@ function Automaton.show_workspaces()
         prompt_title = "Workspaces",
 
         columns = {
-            {width = 40},
-            {remaining = true}
+            { width = 40 },
+            { remaining = true }
         },
 
         entry_maker = function(e)
@@ -206,8 +209,8 @@ function Automaton.show_workspaces()
 
         displayer = function(e)
             return {
-                {e.value.ws:get_name(), "TelescopeResultsIdentifier"},
-                {string.format("%d buffer(s)", #e.value.files), "TelescopeResultsNumber"},
+                { e.value.ws:get_name(),                         "TelescopeResultsIdentifier" },
+                { string.format("%d buffer(s)", #e.value.files), "TelescopeResultsNumber" },
             }
         end
     }, function(e)
@@ -226,9 +229,9 @@ function Automaton.recent_workspaces()
         prompt_title = "Workspaces",
 
         columns = {
-            {width = 1},
-            {width = 20},
-            {remaining = true}
+            { width = 1 },
+            { width = 20 },
+            { remaining = true }
         },
 
         entry_maker = function(e)
@@ -241,8 +244,8 @@ function Automaton.recent_workspaces()
         displayer = function(e)
             return {
                 Automaton.config.icons.workspace,
-                {Utils.get_filename(e.value.root), "TelescopeResultsNumber"},
-                {e.value.root, "TelescopeResultsIdentifier"},
+                { Utils.get_filename(e.value.root), "TelescopeResultsNumber" },
+                { e.value.root,                     "TelescopeResultsIdentifier" },
             }
         end
     }, function(e)
@@ -251,7 +254,7 @@ function Automaton.recent_workspaces()
 end
 
 function Automaton.create_workspace()
-    vim.ui.input({prompt = "Workspace name "}, function(wsname)
+    vim.ui.input({ prompt = "Workspace name " }, function(wsname)
         if wsname and string.len(wsname) then
             require("automaton.picker").select_folder(function(p)
                 Automaton.init_workspace(Path:new(p, wsname))
@@ -273,7 +276,7 @@ function Automaton.init_workspace(filepath)
             prompt = "Select Template"
         }, function(t)
             if t then
-                wspath:mkdir({parents = true})
+                wspath:mkdir({ parents = true })
 
                 templates[t]:copy({
                     recursive = true,
@@ -302,9 +305,10 @@ function Automaton.check_workspace(filepath)
 end
 
 function Automaton.load_workspace(searchpath, files)
-    files = vim.F.if_nil(files, { })
+    files = vim.F.if_nil(files, {})
 
     local wsloc = Path:new(searchpath, Automaton.config.impl.workspace)
+    local changed = false
 
     if wsloc:is_dir() then
         local wspath = wsloc:parent()
@@ -332,12 +336,14 @@ function Automaton.load_workspace(searchpath, files)
         end
 
         Automaton.update_recents(ws)
+        changed = Automaton.active ~= ws
         Automaton.active = ws
     else
+        changed = Automaton.active ~= nil
         Automaton.active = nil
     end
 
-    if vim.is_callable(Automaton.config.events.workspacechanged) then
+    if changed and vim.is_callable(Automaton.config.events.workspacechanged) then
         Automaton.config.events.workspacechanged(Automaton.active)
     end
 
@@ -360,12 +366,12 @@ function Automaton._on_workspace_file_opened(arg)
 
         if ok then
             local sources = {
-                {name = "automatonschema"},
-                {name = "automatonvariable"}
+                { name = "automatonschema" },
+                { name = "automatonvariable" }
             }
 
             if Automaton.config.integrations.luasnip == true then
-                table.insert(sources, {name = "luasnip"})
+                table.insert(sources, { name = "luasnip" })
             end
 
             cmp.setup.buffer({ sources = sources })
@@ -374,7 +380,7 @@ function Automaton._on_workspace_file_opened(arg)
 end
 
 function Automaton.setup(config)
-    Automaton.config = vim.tbl_deep_extend("force", DefaultConfig, config or { })
+    Automaton.config = vim.tbl_deep_extend("force", DefaultConfig, config or {})
     Automaton.config.impl = DefaultConfig.impl -- Always override 'impl' key
 
     Automaton.storage:mkdir({
@@ -394,9 +400,9 @@ function Automaton.setup(config)
         end
     end
 
-    local groupid = vim.api.nvim_create_augroup("Automaton", {clear = true})
+    local groupid = vim.api.nvim_create_augroup("Automaton", { clear = true })
 
-    vim.api.nvim_create_autocmd({"BufNewFile", "BufRead"}, {
+    vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
         group = groupid,
         pattern = vim.tbl_map(function(x)
             return "*" .. Utils.dirsep .. Automaton.config.impl.workspace .. Utils.dirsep .. x
@@ -430,12 +436,18 @@ function Automaton.setup(config)
             end
         end
 
-        if action == "create" then Automaton.create_workspace()
-        elseif action == "recents" then Automaton.recent_workspaces()
-        elseif action == "workspaces" then Automaton.show_workspaces()
-        elseif action == "init" then Automaton.init_workspace()
-        elseif action == "load" then Automaton.load_workspace()
-        elseif action == "jobs" then require("automaton.runner").show_jobs(Automaton.config)
+        if action == "create" then
+            Automaton.create_workspace()
+        elseif action == "recents" then
+            Automaton.recent_workspaces()
+        elseif action == "workspaces" then
+            Automaton.show_workspaces()
+        elseif action == "init" then
+            Automaton.init_workspace()
+        elseif action == "load" then
+            Automaton.load_workspace()
+        elseif action == "jobs" then
+            require("automaton.runner").show_jobs(Automaton.config)
         elseif action == "config" then
             local ws = Automaton.get_active_workspace()
             if ws then ws:edit_config() end
@@ -444,61 +456,69 @@ function Automaton.setup(config)
             if not ws then return end
             Automaton.check_save()
 
-            if arg == "default" then ws:launch_default(action == "debug")
-            else ws:show_launch(action == "debug")
+            if arg == "default" then
+                ws:launch_default(action == "debug")
+            else
+                ws:show_launch(action == "debug")
             end
         elseif action == "tasks" then
             local ws = Automaton.get_active_workspace()
             if not ws then return end
             Automaton.check_save()
 
-            if arg == "default" then ws:tasks_default()
-            else ws:show_tasks()
+            if arg == "default" then
+                ws:tasks_default()
+            else
+                ws:show_tasks()
             end
         elseif action == "open" then
             check_arg()
             local ws = Automaton.get_active_workspace()
             if not ws then return end
 
-            if arg == "launch" then ws:open_launch()
-            elseif arg == "tasks" then ws:open_tasks()
-            elseif arg == "variables" then ws:open_variables()
-            elseif arg == "config" then ws:open_config()
+            if arg == "launch" then
+                ws:open_launch()
+            elseif arg == "tasks" then
+                ws:open_tasks()
+            elseif arg == "variables" then
+                ws:open_variables()
+            elseif arg == "config" then
+                ws:open_config()
             end
         else
             error("Unknown action '" .. action .. "'")
         end
     end, {
-            nargs = "+",
-            desc = "Automaton",
-            complete = function(_, line)
-                local ws = Automaton.get_active_workspace()
-                local args = Utils.cmdline_split(line)
-                table.remove(args, 1) -- Remove 'Automaton'
+        nargs = "+",
+        desc = "Automaton",
+        complete = function(_, line)
+            local ws = Automaton.get_active_workspace()
+            local args = Utils.cmdline_split(line)
+            table.remove(args, 1) -- Remove 'Automaton'
 
-                local COMMANDS = {"create", "recents", "workspaces", "init", "load"}
+            local COMMANDS = { "create", "recents", "workspaces", "init", "load" }
 
-                if ws then
-                    COMMANDS = vim.list_extend(COMMANDS, {"jobs", "config", "debug", "launch", "tasks", "open"})
-                end
-
-                if vim.tbl_isempty(args) then
-                    return COMMANDS
-                end
-
-                local last = args[#args]
-
-                if ws then
-                    if last == "open" then
-                        return {"launch", "tasks", "variables", "config"}
-                    elseif last == "tasks" or last == "debug" or last == "launch" then
-                        return {"default"}
-                    end
-                end
-
-                return {}
+            if ws then
+                COMMANDS = vim.list_extend(COMMANDS, { "jobs", "config", "debug", "launch", "tasks", "open" })
             end
-        })
+
+            if vim.tbl_isempty(args) then
+                return COMMANDS
+            end
+
+            local last = args[#args]
+
+            if ws then
+                if last == "open" then
+                    return { "launch", "tasks", "variables", "config" }
+                elseif last == "tasks" or last == "debug" or last == "launch" then
+                    return { "default" }
+                end
+            end
+
+            return {}
+        end
+    })
 end
 
 return Automaton
