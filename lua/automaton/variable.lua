@@ -8,14 +8,14 @@ local function tokenize_string(s)
 
         if c1 == '$' and c2 == '{' then
             if i ~= start then
-                table.insert(tokenized, {type = "str", value = s:sub(start, i - 1)})
+                table.insert(tokenized, { type = "str", value = s:sub(start, i - 1) })
                 start = i
             end
 
             while i <= len and ch(i) ~= '}' do i = i + 1 end
 
             if start + 2 ~= i then -- Ignore empty variables
-                table.insert(tokenized, {type = "var", value = s:sub(start + 2, i - 1)})
+                table.insert(tokenized, { type = "var", value = s:sub(start + 2, i - 1) })
             end
 
             start = i + 1
@@ -25,7 +25,7 @@ local function tokenize_string(s)
     end
 
     if start < i then
-        table.insert(tokenized, {type = "str", value = s:sub(start, i)})
+        table.insert(tokenized, { type = "str", value = s:sub(start, i) })
     end
 
     return tokenized
@@ -35,8 +35,10 @@ local function get_variable(name, variables)
     local v = variables
 
     for n in name:gmatch("([^\\.]+)") do
-        if v then v = v[n]
-        else break
+        if v then
+            v = v[n]
+        else
+            break
         end
     end
 
@@ -44,7 +46,7 @@ local function get_variable(name, variables)
 end
 
 local function interpolate(s, variables)
-    local res, tokens = { }, tokenize_string(s)
+    local res, tokens = {}, tokenize_string(s)
 
     for _, tok in ipairs(tokens) do
         if tok.type == "var" then
@@ -83,14 +85,15 @@ local function resolve_all(obj, variables)
     return obj
 end
 
-local Variable = { }
+local Variable = {}
 
 function Variable.get_globals()
-    local Utils, Path = require("automaton.utils"), require("plenary.path")
-    local globals, Scan = { }, require("plenary.scandir")
+    local Utils = require("automaton.utils")
+    local p = vim.fs.joinpath(Utils.get_plugin_root(), "globals")
+    local globals = {}
 
-    for _, p in ipairs(Scan.scan_dir(tostring(Path:new(Utils.get_plugin_root(), "globals")), {depth = 1})) do
-        globals[Utils.get_stem(p)] = Utils.read_json(p)
+    for name, _ in vim.fs.dir(p) do
+        globals[Utils.get_stem(name)] = Utils.read_json(vim.fs.joinpath(p, name))
     end
 
     return globals

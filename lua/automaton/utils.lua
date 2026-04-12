@@ -11,8 +11,6 @@ Utils.colors = {
     white = 37
 }
 
-Utils.dirsep = (vim.loop.os_uname().sysname == "Windows" or vim.loop.os_uname().sysname == "Windows_NT") and "\\" or "/"
-
 function Utils.colorize(s, color)
     return string.format("\027[%dm%s\027[0m", color, s)
 end
@@ -67,31 +65,69 @@ function Utils.split_lines(s)
 end
 
 function Utils.get_number_of_cores()
-    return #vim.tbl_keys(vim.loop.cpu_info())
+    return #vim.tbl_keys(vim.uv.cpu_info())
 end
 
-function Utils.get_plugin_root()
-    local this_path = tostring(require("plenary.path"):new(debug.getinfo(1).source:sub(2))) --:parent())
-
-    if package.config:sub(1, 1) == '\\' then
-        -- we are on windows. debug.getinfo(1).source incorrectly returns
-        -- a path using '/' as path separator. plenary's :parent() can't
-        -- handle these, therefore replace them
-        this_path = this_path:gsub("/", "\\")
-    end
-
-    return require("plenary.path"):new(this_path):parent()
-end
-
-function Utils.get_filename(p)
-    return vim.fn.fnamemodify(tostring(p), ":t")
+function Utils.get_parent(p)
+    return vim.fn.fnamemodify(p, ":h")
 end
 
 function Utils.get_stem(p)
-    local filename = Utils.get_filename(p)
+    local filename = vim.fs.basename(p)
     local idx = filename:match(".*%.()")
     if idx == nil then return filename end
     return filename:sub(0, idx - 2)
+end
+
+function Utils.is_root_path(p)
+    local sep = package.config:sub(1, 1)
+
+    if sep == '\\' then
+        return string.match(p, "^[A-Z]:\\?$")
+    end
+
+    return p == sep
+end
+
+function Utils.read_dir(path, options)
+    options = options or {}
+
+    return vim
+        .iter(vim.fs.dir(path))
+        :map(function(name, type)
+            if not vim.startswith(name, ".") and
+                (not options.only_dirs or (options.only_dirs and type == "directory")) then
+                return vim.fs.joinpath(path, name)
+            end
+        end)
+        :totable()
+end
+
+function Utils.get_plugin_root()
+    local this_path = debug.getinfo(1).source:sub(2)
+
+    if package.config:sub(1, 1) == '\\' then
+        -- we are on windows. debug.getinfo(1).source incorrectly returns
+        -- a path using '/' as path separator.
+        this_path = this_path:gsub("/", "\\")
+    end
+
+    return Utils.get_parent(this_path)
+end
+
+function Utils.copy_to(src, dst)
+    vim.fn.mkdir(dst, "p")
+
+    for name, type in vim.fs.dir(src) do
+        local s = vim.fs.joinpath(src, name)
+        local d = vim.fs.joinpath(dst, name)
+
+        if type == "directory" then
+            Utils.copy_to(s, d)
+        else
+            vim.uv.fs_copyfile(s, d)
+        end
+    end
 end
 
 function Utils.list_reverse(l)
@@ -138,7 +174,7 @@ function Utils.cmdline_split(s)
 end
 
 function Utils.osopen_command()
-    local uname = vim.loop.os_uname().sysname
+    local uname = vim.uv.os_uname().sysname
     local cmd = nil
 
     if uname == "Windows" or uname == "Windows_NT" then

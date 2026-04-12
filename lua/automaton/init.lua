@@ -1,12 +1,10 @@
-local Path = require("plenary.path")
-local Log = require("plenary.log")
 local Utils = require("automaton.utils")
 local DefaultConfig = require("automaton.config")
 local Workspace = require("automaton.workspace")
 local Dialogs = require("automaton.dialogs")
 
 local Automaton = {
-    storage = Path:new(vim.fn.stdpath("data"), "automaton"),
+    storage = vim.fs.joinpath(vim.fn.stdpath("data"), "automaton"),
     workspaces = {},
     config = nil,
     active = nil,
@@ -17,31 +15,32 @@ function Automaton.get_active_workspace()
 end
 
 function Automaton.check_save()
-    if Automaton.config.saveall then
+    if Automaton.config.save_all then
         vim.api.nvim_command("silent! :wall")
     end
 end
 
 function Automaton.get_templates()
-    local templates, Scan = {}, require("plenary.scandir")
+    local templates = {}
 
-    for _, p in ipairs(Scan.scan_dir(tostring(Path:new(Utils.get_plugin_root(), "templates")), { only_dirs = true, depth = 1 })) do
-        templates[Utils.get_filename(p)] = Path:new(p)
+    for _, p in ipairs(Utils.read_dir(vim.fs.joinpath(Utils.get_plugin_root(), "templates"), { only_dirs = true })) do
+        templates[vim.fs.basename(p)] = p
     end
 
     return templates
 end
 
 function Automaton.load_recents()
-    local recentspath = Path:new(Automaton.storage, Automaton.config.impl.recentsfile)
+    local recentspath = vim.fs.joinpath(Automaton.storage, Automaton.config.impl.recentsfile)
     local recents = {}
 
-    if recentspath:is_file() then
+    if vim.fn.filereadable(recentspath) == 1 then
         local recentsdata = Utils.read_json(recentspath)
 
         if type(recentsdata) == "table" and recentsdata.version == Automaton.config.impl.VERSION then
             recents = vim.tbl_filter(function(proj) -- Filter deleted projects
-                return Path:new(proj.root, Automaton.config.impl.workspace):is_dir()
+                local p = vim.fs.joinpath(proj.root, Automaton.config.impl.workspace)
+                return vim.fn.isdirectory(p) == 1
             end, recentsdata.recents or {})
         end
     end
@@ -75,7 +74,7 @@ function Automaton.get_buffers_for_ws(ws, options)
                     if options.byid == true then
                         table.insert(buffers, buf)
                     elseif options.relative == true then
-                        table.insert(buffers, tostring(Path:new(filepath):make_relative(ws.rootpath)))
+                        table.insert(buffers, vim.fs.relpath(ws.rootpath, filepath))
                     else
                         table.insert(buffers, filepath)
                     end
@@ -92,7 +91,7 @@ function Automaton.save_workspaces()
     local newrecents = {}
 
     for _, recent in ipairs(recents) do
-        for _, ws in ipairs(Automaton.workspaces) do
+        for _, ws in pairs(Automaton.workspaces) do
             if recent.root == ws.rootpath then
                 recent.files = Automaton.get_buffers_for_ws(ws, { relative = true })
                 break
@@ -136,7 +135,6 @@ end
 
 function Automaton.close_workspace(ws)
     local buffers = Automaton.get_buffers_for_ws(ws, { byid = true })
-
     Automaton.check_save()
 
     for _, buf in ipairs(buffers) do
@@ -178,7 +176,7 @@ function Automaton._edit_workspace(ws)
         elseif e.ordinal == "CLOSE" then
             Automaton.close_workspace(ws)
         else
-            vim.api.nvim_command(":e " .. tostring(Path:new(ws.rootpath, e.ordinal)))
+            vim.api.nvim_command(":e " .. vim.fs.joinpath(ws.rootpath, e.ordinal))
         end
     end)
 end
@@ -222,7 +220,7 @@ function Automaton.recent_workspaces()
     local recents = Automaton.load_recents()
 
     local gettext = function(e)
-        return Utils.get_filename(e.root) .. " - " .. e.root
+        return vim.fs.basename(e.root) .. " - " .. e.root
     end
 
     Dialogs.table(recents, {
@@ -244,8 +242,8 @@ function Automaton.recent_workspaces()
         displayer = function(e)
             return {
                 Automaton.config.icons.workspace,
-                { Utils.get_filename(e.value.root), "TelescopeResultsNumber" },
-                { e.value.root,                     "TelescopeResultsIdentifier" },
+                { vim.fs.basename(e.value.root), "TelescopeResultsNumber" },
+                { e.value.root,                  "TelescopeResultsIdentifier" },
             }
         end
     }, function(e)
@@ -257,34 +255,25 @@ function Automaton.create_workspace()
     vim.ui.input({ prompt = "Workspace name " }, function(wsname)
         if wsname and string.len(wsname) then
             require("automaton.picker").select_folder(function(p)
-                Automaton.init_workspace(Path:new(p, wsname))
+                Automaton.init_workspace(vim.fs.joinpath(p, wsname))
             end)
         end
     end)
 end
 
 function Automaton.init_workspace(filepath)
-    filepath = vim.F.if_nil(filepath, Path:new(vim.fn.expand("%:p")):parent())
+    filepath = vim.F.if_nil(filepath, Utils.get_parent(vim.fn.expand("%:p")))
+    local wspath = vim.fs.joinpath(filepath, Automaton.config.impl.workspace)
 
-    local wspath = Path:new(filepath, Automaton.config.impl.workspace)
-    assert(not wspath:is_file())
-
-    if not wspath:exists() then
+    if vim.fn.isdirectory(wspath) == 0 then
         local templates = Automaton.get_templates()
 
         vim.ui.select(vim.tbl_keys(templates), {
             prompt = "Select Template"
         }, function(t)
             if t then
-                wspath:mkdir({ parents = true })
-
-                templates[t]:copy({
-                    recursive = true,
-                    override = true,
-                    destination = wspath,
-                })
-
-                Automaton.load_workspace(wspath:parent())
+                Utils.copy_to(templates[t], wspath)
+                Automaton.load_workspace(Utils.get_parent(wspath))
             end
         end)
     else
@@ -293,11 +282,11 @@ function Automaton.init_workspace(filepath)
 end
 
 function Automaton.check_workspace(filepath)
-    if not filepath:exists() then
+    if vim.fn.isdirectory(filepath) == 0 then
         return
     end
 
-    for _, p in ipairs(filepath:parents()) do
+    for _, p in vim.fs.parents(filepath) do
         if Automaton.load_workspace(p) then
             break
         end
@@ -307,29 +296,29 @@ end
 function Automaton.load_workspace(searchpath, files)
     files = vim.F.if_nil(files, {})
 
-    local wsloc = Path:new(searchpath, Automaton.config.impl.workspace)
+    local wsloc = vim.fs.joinpath(searchpath, Automaton.config.impl.workspace)
     local changed = false
 
-    if wsloc:is_dir() then
-        local wspath = wsloc:parent()
-        local ws = Automaton.workspaces[tostring(wspath)]
+    if vim.fn.isdirectory(wsloc) == 1 then
+        local wspath = Utils.get_parent(wsloc)
+        local ws = Automaton.workspaces[wspath]
 
         if ws then
-            Log.debug("Switched active workspace")
+            vim.notify("Switched active workspace", vim.log.levels.DEBUG)
             ws:set_active()
         else
-            Log.debug("Workspace found in " .. tostring(wspath))
+            vim.notify("Workspace found in " .. wspath, vim.log.levels.DEBUG)
             ws = Workspace(Automaton.config, wspath)
-            Automaton.workspaces[tostring(wspath)] = ws
+            Automaton.workspaces[wspath] = ws
             ws:set_active()
 
             if vim.tbl_isempty(files) and not Automaton.has_open_buffers() then
                 vim.api.nvim_command(":enew")
             else -- Reload files for this workspace
                 for _, relpath in ipairs(files) do
-                    local filepath = Path:new(ws.rootpath, relpath)
-                    if filepath:is_file() then
-                        vim.api.nvim_command(":e " .. tostring(filepath))
+                    local filepath = vim.fs.joinpath(ws.rootpath, relpath)
+                    if vim.fn.filereadable(filepath) == 1 then
+                        vim.api.nvim_command(":e " .. filepath)
                     end
                 end
             end
@@ -382,17 +371,7 @@ end
 function Automaton.setup(config)
     Automaton.config = vim.tbl_deep_extend("force", DefaultConfig, config or {})
     Automaton.config.impl = DefaultConfig.impl -- Always override 'impl' key
-
-    Automaton.storage:mkdir({
-        exists_ok = true,
-        parents = true
-    })
-
-    if type(Automaton.config.debug) == "string" then
-        Log.level = Automaton.config.debug
-    else
-        Log.level = Automaton.config.debug and "trace" or "info"
-    end
+    vim.fn.mkdir(Automaton.storage, "p")
 
     for integ, enable in pairs(Automaton.config.integrations) do
         if enable == true then
@@ -405,7 +384,7 @@ function Automaton.setup(config)
     vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
         group = groupid,
         pattern = vim.tbl_map(function(x)
-            return "*" .. Utils.dirsep .. Automaton.config.impl.workspace .. Utils.dirsep .. x
+            return vim.fs.joinpath("*", Automaton.config.impl.workspace, x)
         end, Automaton._get_workspace_files()),
         callback = Automaton._on_workspace_file_opened
     })
@@ -414,7 +393,7 @@ function Automaton.setup(config)
         group = groupid,
         callback = function(arg)
             if #arg.file > 0 then
-                Automaton.check_workspace(Path:new(arg.file))
+                Automaton.check_workspace(arg.file)
             end
         end
     })

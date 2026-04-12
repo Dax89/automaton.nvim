@@ -151,7 +151,7 @@ function Runner._append_output(lines, e)
 end
 
 function Runner.select_os_command(e, cmdkey)
-    local osname = vim.loop.os_uname().sysname:lower()
+    local osname = vim.uv.os_uname().sysname:lower()
 
     local cmds = {
         command = nil,
@@ -183,6 +183,16 @@ function Runner._colorize(s, color, e)
     end
 
     return Utils.colorize(s, color)
+end
+
+function Runner._display_cmd(cmd)
+    if type(cmd) == "table" then
+        local parts = vim.tbl_map(function(a)
+            return a:find("%s") and ('"' .. a .. '"') or a
+        end, cmd)
+        return table.concat(parts, " ")
+    end
+    return cmd
 end
 
 function Runner._run(config, ws, cmds, e, onexit, i)
@@ -258,16 +268,15 @@ function Runner._run(config, ws, cmds, e, onexit, i)
                 Runner.termchanid = vim.api.nvim_open_term(Runner.termbufid, {})
                 vim.api.nvim_win_set_buf(Runner.termwinid, Runner.termbufid)
                 vim.api.nvim_buf_set_name(Runner.termbufid, e.name)
-                vim.api.nvim_buf_set_option(Runner.termbufid, "filetype", "automaton-terminal")
+                vim.api.nvim_set_option_value("filetype", "automaton-terminal", { buf = Runner.termbufid })
                 vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
             end
         else
             Runner.close_terminal()
         end
 
-        Runner._append_line(
-            Runner._colorize(">> " .. (type(cmds[i]) == "table" and table.concat(cmds[i], " ") or cmds[i]),
-                config.terminal.cmdcolor, e))
+        Runner._append_line(Runner._colorize(">> " .. Runner._display_cmd(cmds[i]),
+            config.terminal.cmdcolor, e))
 
         e.jobid = vim.fn.jobstart(cmds[i], options)
 
@@ -290,16 +299,19 @@ function Runner._run(config, ws, cmds, e, onexit, i)
 end
 
 function Runner._run_shell(config, ws, oscmd, options, onexit)
-    local runcmds = Runner._parse_command(oscmd, true)
+    local runcmds = vim.tbl_map(function(r)
+        return table.concat(r, " ")
+    end, Runner._parse_command(oscmd))
+
     Runner._run(config, ws, runcmds, options, onexit)
 end
 
 function Runner._run_process(config, ws, cmds, options, onexit)
-    local runcmds = Runner._parse_command(cmds, true)
+    local runcmds = Runner._parse_command(cmds)
     Runner._run(config, ws, runcmds, options, onexit)
 end
 
-function Runner._parse_command(oscmd, concat)
+function Runner._parse_command(oscmd)
     local cmds = vim.islist(oscmd.command) and oscmd.command or { oscmd }
     local runcmds = {}
 
@@ -317,7 +329,7 @@ function Runner._parse_command(oscmd, concat)
             vim.list_extend(runcmd, cmd.args)
         end
 
-        table.insert(runcmds, concat and table.concat(runcmd, " ") or runcmd)
+        table.insert(runcmds, runcmd)
     end
 
     return runcmds

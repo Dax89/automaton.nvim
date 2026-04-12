@@ -1,4 +1,4 @@
-local CmpIntegration = { }
+local CmpIntegration = {}
 
 function CmpIntegration.integrate(automaton)
     local ok, cmp = pcall(require, "cmp")
@@ -10,7 +10,6 @@ function CmpIntegration.integrate(automaton)
         cmp.register_source("automatonvariable", VariableSource.new(automaton))
     else
         automaton.config.integrations.cmp = false
-        vim.notify("Cmp is not installed, integration disabled")
     end
 end
 

@@ -45,7 +45,6 @@ Configurations are stored in JSON5 format and they allows to execute tasks, run 
 use {
   "Dax89/automaton.nvim",  
   requires = { 
-       {"nvim-lua/plenary.nvim"},
        {"nvim-telescope/telescope.nvim"},
        {"mfussenegger/nvim-dap"}, -- Debug support for 'launch' configurations (Optional)
        {"hrsh7th/nvim-cmp"},      -- Autocompletion for automaton workspace files (Optional)
@@ -59,7 +58,6 @@ use {
 {
   "Dax89/automaton.nvim",  
   dependencies = {
-       "nvim-lua/plenary.nvim",
        "nvim-telescope/telescope.nvim",
        "mfussenegger/nvim-dap", -- Debug support for 'launch' configurations (Optional)
        "hrsh7th/nvim-cmp",      -- Autocompletion for automaton workspace files (Optional)
@@ -73,8 +71,7 @@ use {
 #### Default Config
 ```lua
 require("automaton").setup({
-    debug = false,
-    saveall = true,
+    save_all = true,
     ignore_ft = { },
 
     terminal = {

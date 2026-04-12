@@ -1,8 +1,7 @@
 local Utils = require("automaton.utils")
 
 return {
-    debug = false,
-    saveall = true,
+    save_all = true,
     ignore_ft = {},
 
     terminal = {
