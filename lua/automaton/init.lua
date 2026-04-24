@@ -282,11 +282,11 @@ function Automaton.init_workspace(filepath)
 end
 
 function Automaton.check_workspace(filepath)
-    if vim.fn.isdirectory(filepath) == 0 then
+    if vim.fn.filereadable(filepath) == 0 then
         return
     end
 
-    for _, p in vim.fs.parents(filepath) do
+    for p in vim.fs.parents(filepath) do
         if Automaton.load_workspace(p) then
             break
         end
