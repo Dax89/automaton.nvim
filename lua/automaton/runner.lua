@@ -79,6 +79,34 @@ function Runner.close_terminal()
     end
 end
 
+
+function Runner.toggle_terminal(config)
+    local bufid = Runner.termbufid
+    local winid = Runner.termwinid
+    if bufid == nil or not vim.api.nvim_buf_is_valid(bufid) then
+        vim.notify("No automaton output available")
+        return
+    end
+
+    if winid ~= nil and vim.api.nvim_win_is_valid(winid) then
+        -- don't use close_terminal(), as that destructively closes,
+        -- i.e. we can't recall the previous instance
+        vim.api.nvim_win_close(winid, false)
+        Runner.termwinid = nil
+    else
+        -- reopen at previous position. should never be empty, but botright if it was
+        vim.api.nvim_command(vim.F.if_nil(config.terminal.position, "botright") .. " split")
+        local new_win = vim.api.nvim_get_current_win()
+        vim.api.nvim_win_set_buf(new_win, bufid)
+        Runner.termwinid = new_win
+        -- reopen in previous size, reset focus to the window
+        -- that had focus before reopening the terminal
+        vim.api.nvim_command("resize " .. tostring(vim.F.if_nil(config.terminal.size, 10)))
+        vim.api.nvim_command("wincmd p")
+    end
+        
+end
+
 function Runner.clear_quickfix(e)
     vim.fn.setqflist({}, " ", { title = vim.F.if_nil(e.name, "Output") })
 end

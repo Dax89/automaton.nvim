@@ -104,23 +104,24 @@ require("automaton").setup({
 ### Commands
 
 ```lua
-:Automaton create         -- Create a new workspace
-           recents        -- Shows recent workspaces
-           init           -- Initializes a workspace in "cwd"
-           load           -- Loads a workspace in "cwd"
-           workspaces     -- Manage loaded workspaces
-           jobs           -- Shows running tasks/launch (can be killed too)
-           config         -- Show/Edit workspace settings
-           tasks default  -- Exec default task
-           tasks          -- Select and exec task
-           launch default -- Exec default launch configuration
-           launch         -- Select and exec a launch configuration
-           debug default  -- Debug default launch configuration
-           debug          -- Select and debug a launch configuration
-           open launch    -- Open workspace's launch.json
-           open tasks     -- Open workspace's tasks.json
-           open variables -- Open workspace's variables.json
-           open config    -- Open workspace's config.json
+:Automaton create           -- Create a new workspace
+           recents          -- Shows recent workspaces
+           init             -- Initializes a workspace in "cwd"
+           load             -- Loads a workspace in "cwd"
+           workspaces       -- Manage loaded workspaces
+           jobs             -- Shows running tasks/launch (can be killed too)
+           config           -- Show/Edit workspace settings
+           tasks default    -- Exec default task
+           tasks            -- Select and exec task
+           launch default   -- Exec default launch configuration
+           launch           -- Select and exec a launch configuration
+           debug default    -- Debug default launch configuration
+           debug            -- Select and debug a launch configuration
+           open launch      -- Open workspace's launch.json
+           open tasks       -- Open workspace's tasks.json
+           open variables   -- Open workspace's variables.json
+           open config      -- Open workspace's config.json
+           toggle_terminal  -- Toggle's the terminal opened when executing a task
 ```
 
 ## Workspace
@@ -199,6 +200,8 @@ vim.keymap.set("n", "<leader>aol", "<CMD>Automaton open launch<CR>")
 vim.keymap.set("n", "<leader>aov", "<CMD>Automaton open variables<CR>")
 vim.keymap.set("n", "<leader>aot", "<CMD>Automaton open tasks<CR>")
 vim.keymap.set("n", "<leader>aoc", "<CMD>Automaton open config<CR>")
+
+vim.keymap.set("n", "<leader>ax", "<CMD>Automaton toggle_terminal<CR>")
 
 -- Visual Mode
 vim.keymap.set("v", "<F5>", "<CMD><C-U>Automaton launch default<CR>")
