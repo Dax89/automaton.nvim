@@ -464,6 +464,8 @@ function Automaton.setup(config)
             elseif arg == "config" then
                 ws:open_config()
             end
+        elseif action == "toggle_terminal" then
+            require("automaton.runner").toggle_terminal(Automaton.config)
         else
             error("Unknown action '" .. action .. "'")
         end
@@ -478,7 +480,8 @@ function Automaton.setup(config)
             local COMMANDS = { "create", "recents", "workspaces", "init", "load" }
 
             if ws then
-                COMMANDS = vim.list_extend(COMMANDS, { "jobs", "config", "debug", "launch", "tasks", "open" })
+                COMMANDS = vim.list_extend(COMMANDS, { "jobs", "config", "debug", 
+                    "launch", "tasks", "open", "toggle_terminal" })
             end
 
             if vim.tbl_isempty(args) then
