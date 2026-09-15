@@ -243,8 +243,9 @@ return function(config, rootpath)
 
     function Workspace:show_tasks()
         local tasks = self:get_tasks()
+        local visible = vim.tbl_filter(function(t) return t.hidden ~= true end, tasks)
 
-        show_entries(config, self, tasks, {
+        show_entries(config, self, visible, {
             title = "Tasks",
             icon = "task",
         }, function(e) self:run(e, tasks) end)

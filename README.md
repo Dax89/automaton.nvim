@@ -151,6 +151,12 @@ Here is an example of `tasks.json` and `launch.json`:
             name: "Node Version",
             type: "shell",
             command: "node -v",
+        },
+        {
+            name: "Node Version (hidden)",
+            type: "shell",
+            command: "node -v",
+            hidden: true
         }
     ]
 }
