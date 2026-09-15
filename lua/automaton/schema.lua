@@ -9,6 +9,7 @@ local Schema = {
         "quickfix",
         "type",
         "name",
+        "hidden",
         "depends",
         "args",
         "detach",
