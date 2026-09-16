@@ -233,9 +233,10 @@ return function(config, rootpath)
     end
 
     function Workspace:show_launch(debug)
-        local configs = self:get_launch()
+        local launches = self:get_launch()
+        local visible = vim.tbl_filter(function(t) return t.hidden ~= true end, launches)
 
-        show_entries(config, self, configs, {
+        show_entries(config, self, visible, {
             title = "Launch",
             icon = "launch",
         }, function(e) self:launch(e, debug) end)
